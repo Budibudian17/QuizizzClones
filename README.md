@@ -17,16 +17,11 @@ VISUAL DIRECTION & DESIGN SYSTEM:
 - Visual elements should look clean, spacious, and flat, but enhanced with subtle 3D depth (e.g., precise glassmorphism, smooth CSS 3D transforms, or lightweight Three.js canvas layer).
 - Use direct SVG icons (Lucide) natively. Ensure everything is mobile-responsive and feels like a premium modern SaaS product.
 
-DEFAULT QUIZ CONTENT:
-
-- Preload the application with an immediate default quiz titled "Tebak Kampus Indonesia" focusing on Universities Across Indonesia.
-- Include realistic mock questions (e.g., identifying main campuses, logos, locations, and historical facts about top institutions like UI, UGM, ITB, etc.).
-
 CORE ARCHITECTURE & INTERFACES (Single Page Application State):
 
 1. HOST VIEW (Dashboard & Creator):
 
-- A clean, minimalist creator dashboard displaying saved quizzes, dominated by the preloaded "Tebak Kampus Indonesia" quiz.
+- A clean, minimalist creator dashboard displaying only quizzes saved by the signed-in host.
 - Quiz Editor interface allowing the host to add/edit multiple-choice questions (up to 4 options), select the correct answer, and configure a custom countdown timer (10s, 20s, 30s) per question.
 - "Launch Game" button that instantly generates a unique 6-digit Game PIN and opens the game lobby.
 
@@ -50,9 +45,36 @@ CORE ARCHITECTURE & INTERFACES (Single Page Application State):
 - Leaderboard & Final Podium: Displays a top-5 ranking transition between questions. Conclude the entire game with a premium 3D Podium layout (1st, 2nd, and 3rd place) featuring clean rising animations for the winners' cards and a subtle spotlight effect.
 
 IMPLEMENTATION DETAIL:
-Incorporate a fully functional mock real-time simulation layer using local state synchronization or local storage hooks. This ensures the entire multi-window flow (Host control syncing simultaneously with Player responses) can be tested completely side-by-side inside the Lovable preview environment out of the box.
+The multiplayer flow uses Supabase Auth, Postgres RPCs, Row Level Security, and
+Supabase Realtime so hosts and players can join from separate devices.
 
 This project was built with [Lovable](https://lovable.dev).
+
+## Supabase setup
+
+Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local` for
+local development and in the deployment environment for production. See
+`.env.example` for the expected variable names. Vite uses the `VITE_` prefix
+instead of Next.js's `NEXT_PUBLIC_` prefix.
+
+The browser and server clients are configured for cookie-backed Supabase Auth.
+TanStack Start request middleware refreshes an existing session. Host accounts
+use email/password auth; players join with temporary anonymous auth sessions.
+Quizzes, rooms, player answers, scoring, and phase transitions are stored in
+Supabase, with room updates delivered through Supabase Realtime.
+
+Before running the app:
+
+1. Apply `supabase/migrations/20261101000000_kampusquiz_backend.sql` to the project.
+2. Enable **Anonymous Sign-Ins** in Supabase Authentication settings for players.
+3. Ensure the Email provider is enabled for host accounts.
+4. Restart the Vite dev server after changing `.env.local`.
+
+The migration adds Row Level Security and RPCs for joining rooms, starting games,
+submitting answers, scoring, and advancing phases. Correct answers are withheld
+from players until their question is revealed. The dashboard loads quizzes only
+from the signed-in host's database records. New accounts start with an empty quiz
+list; no sample quizzes or localStorage quiz data are seeded into the database.
 
 ## Build with Lovable
 
@@ -73,13 +95,12 @@ npm i
 npm run dev
 ```
 
-### Coba permainan lokal
+### Coba permainan
 
 1. Buka `http://localhost:8080/`, masuk ke dashboard host, lalu luncurkan kuis.
-2. Gabungkan minimal 4 pemain asli melalui halaman Join sebelum memulai.
+2. Buat akun host atau masuk, lalu gabungkan minimal 4 pemain asli melalui halaman Join.
 3. Mulai permainan dari tab host. Setelah menjawab, pemain masuk ke layar timer saja; ronde berlanjut saat semua pemain menjawab atau waktu habis.
 
-Hanya pemain yang bergabung lewat PIN yang ikut bermain. Sinkronisasi saat ini memakai localStorage dan BroadcastChannel, sehingga hanya berbagi sesi antar-tab dalam browser yang sama; bergabung dari perangkat/browser lain memerlukan backend.
+PIN dapat disalin dari lobby host. Pada layar soal, host dapat memantau pemain yang sudah menjawab dan yang masih menunggu. Sesi pemain disimpan di Supabase Auth agar bisa dipulihkan setelah refresh.
 
-PIN dapat disalin dari lobby host. Pada layar soal, host dapat memantau pemain yang sudah menjawab dan yang masih menunggu. Room host serta identitas pemain disimpan untuk pemulihan saat halaman di-refresh; identitas pemain disimpan per tab browser.
 # QuizizzClones
