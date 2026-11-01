@@ -1,14 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import {
-  ArrowRight,
-  Gamepad2,
-  GraduationCap,
-  LoaderCircle,
-  LockKeyhole,
-  Pencil,
-  UserPlus,
-} from "lucide-react";
+import { ArrowRight, Gamepad2, LoaderCircle, LockKeyhole, Pencil, UserPlus } from "lucide-react";
 
 import { AmbientBackground } from "@/components/AmbientBackground";
 import { createClient } from "@/utils/supabase/client";
@@ -119,10 +111,7 @@ function HomePage() {
       <AmbientBackground />
       <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col items-center justify-center px-5 py-12 sm:px-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-glass-border bg-primary/15 shadow-glow">
-            <GraduationCap className="h-6 w-6 text-primary" strokeWidth={2.2} />
-          </div>
-          <span className="font-display text-xl font-extrabold tracking-tight">KampusQuiz</span>
+          <img src="/img/logo.webp" alt="Quizverse" className="h-auto w-48" />
         </div>
 
         <h1 className="mt-10 text-center font-display text-3xl font-extrabold tracking-tight sm:text-4xl">

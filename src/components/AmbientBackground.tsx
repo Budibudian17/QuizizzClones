@@ -1,15 +1,12 @@
 import { useEffect, useRef } from "react";
 
-/**
- * Minimalist ambient layer: perspective grid + floating glass cards that
- * drift subtly with cursor movement (parallax by depth, eased with rAF).
- */
-const CARDS = [
-  { top: "12%", left: "6%", size: 150, depth: 0.5, tilt: -6, delay: 0 },
-  { top: "58%", left: "3%", size: 100, depth: 0.9, tilt: 10, delay: 1.6 },
-  { top: "16%", left: "82%", size: 190, depth: 0.65, tilt: 7, delay: 0.8 },
-  { top: "70%", left: "78%", size: 120, depth: 1.1, tilt: -12, delay: 2.4 },
-  { top: "34%", left: "46%", size: 80, depth: 0.35, tilt: 4, delay: 3.1 },
+/** Campus logos drift subtly with cursor movement, eased with rAF. */
+const LOGOS = [
+  { src: "/img/ui.webp", top: "12%", left: "7%", size: 112, depth: 0.5, tilt: -6, delay: 0 },
+  { src: "/img/nf.webp", top: "62%", left: "4%", size: 104, depth: 0.9, tilt: 10, delay: 1.6 },
+  { src: "/img/itb.webp", top: "15%", left: "82%", size: 126, depth: 0.65, tilt: 7, delay: 0.8 },
+  { src: "/img/binus.webp", top: "72%", left: "78%", size: 120, depth: 1.1, tilt: -12, delay: 2.4 },
+  { src: "/img/ipb.webp", top: "42%", left: "88%", size: 84, depth: 0.35, tilt: 4, delay: 3.1 },
 ];
 
 export function AmbientBackground() {
@@ -44,23 +41,23 @@ export function AmbientBackground() {
 
   return (
     <div ref={ref} className="ambient" aria-hidden>
-      <div className="ambient-grid" />
-      {CARDS.map((c, i) => (
+      {LOGOS.map((c, i) => (
         <div
           key={i}
-          className="ambient-card anim-float"
+          className="ambient-logo anim-float"
           style={
             {
               top: c.top,
               left: c.left,
               width: c.size,
-              height: c.size * 0.72,
               "--depth": c.depth,
               "--tilt": `${c.tilt}deg`,
               animationDelay: `${c.delay}s`,
             } as React.CSSProperties
           }
-        />
+        >
+          <img src={c.src} alt="" draggable={false} />
+        </div>
       ))}
     </div>
   );

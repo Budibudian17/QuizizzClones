@@ -13,7 +13,7 @@ CRITICAL TYPOGRAPHY & FONT DIRECTION:
 VISUAL DIRECTION & DESIGN SYSTEM:
 
 - Strictly avoid overly bright, multi-colored neon, or generic "AI-generated" space/cyberpunk styles.
-- Use a refined, premium dark palette: Slate/Neutral dark backgrounds (#0F172A or similar), crisp white typography, and subtle monochromatic accent colors (like refined indigo or teal) for highlights.
+- Use a refined, premium dark palette: warm charcoal backgrounds, crisp ivory typography, and golden yellow accents complemented by muted earth tones.
 - Visual elements should look clean, spacious, and flat, but enhanced with subtle 3D depth (e.g., precise glassmorphism, smooth CSS 3D transforms, or lightweight Three.js canvas layer).
 - Use direct SVG icons (Lucide) natively. Ensure everything is mobile-responsive and feels like a premium modern SaaS product.
 

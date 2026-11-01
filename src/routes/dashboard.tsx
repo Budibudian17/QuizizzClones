@@ -1,16 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import {
-  GraduationCap,
-  LogOut,
-  MonitorPlay,
-  Pencil,
-  Play,
-  Plus,
-  Trash2,
-  Trophy,
-  Users,
-} from "lucide-react";
+import { LogOut, MonitorPlay, Pencil, Play, Plus, Trash2, Trophy, Users } from "lucide-react";
 
 import { AmbientBackground } from "@/components/AmbientBackground";
 import { deleteOwnedQuiz, getHostUser, loadOwnedQuizzes } from "@/game/supabase-quizzes";
@@ -94,10 +84,7 @@ function Dashboard() {
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 py-8 sm:px-8">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-glass-border bg-primary/15 shadow-glow">
-              <GraduationCap className="h-5 w-5 text-primary" strokeWidth={2.2} />
-            </div>
-            <span className="font-display text-lg font-extrabold tracking-tight">KampusQuiz</span>
+            <img src="/img/logo.webp" alt="Quizverse" className="h-auto w-36" />
           </div>
           <button
             onClick={() => void signOut()}
@@ -113,7 +100,7 @@ function Dashboard() {
             Dasbor Kuis
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
-            Kelola kuis, atur soal, dan luncurkan sesi multiplayer — pemain bergabung lewat 6-digit
+            Kelola kuis, atur soal, dan luncurkan sesi multiplayer, pemain bergabung lewat 6-digit
             Game PIN dari tab atau perangkat lain.
           </p>
 
@@ -228,7 +215,7 @@ function Dashboard() {
               {
                 icon: Trophy,
                 title: "3 · Bermain & menang",
-                body: "Jawab cepat untuk bonus skor; podium juara menutup permainan.",
+                body: "Jawab cepat untuk bonus skor, podium juara menutup permainan.",
               },
             ].map(({ icon: Icon, title, body }) => (
               <div key={title} className="glass rounded-2xl p-5">

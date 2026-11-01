@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * KampusQuiz design system — premium dark, slate base (#0F172A family),
- * refined indigo + teal accents, Plus Jakarta Sans display / Inter body.
+ * Quizverse design system — warm charcoal base with golden yellow accents,
+ * Plus Jakarta Sans display / Inter body.
  * The app is intentionally dark-only: the single source of truth is :root.
  */
 
@@ -59,37 +59,37 @@
 :root {
   --radius: 0.875rem;
 
-  --background: oklch(0.171 0.028 262);
-  --foreground: oklch(0.96 0.005 250);
-  --card: oklch(0.212 0.03 262);
-  --card-foreground: oklch(0.96 0.005 250);
-  --popover: oklch(0.212 0.03 262);
-  --popover-foreground: oklch(0.96 0.005 250);
-  --primary: oklch(0.62 0.16 264);
-  --primary-foreground: oklch(0.98 0.003 250);
-  --secondary: oklch(0.258 0.03 262);
-  --secondary-foreground: oklch(0.96 0.005 250);
-  --muted: oklch(0.245 0.028 262);
-  --muted-foreground: oklch(0.68 0.022 260);
-  --accent: oklch(0.76 0.11 195);
-  --accent-foreground: oklch(0.18 0.03 262);
+  --background: oklch(0.17 0.014 60);
+  --foreground: oklch(0.95 0.01 82);
+  --card: oklch(0.215 0.018 62);
+  --card-foreground: oklch(0.95 0.01 82);
+  --popover: oklch(0.215 0.018 62);
+  --popover-foreground: oklch(0.95 0.01 82);
+  --primary: oklch(0.82 0.16 82);
+  --primary-foreground: oklch(0.2 0.025 58);
+  --secondary: oklch(0.27 0.02 62);
+  --secondary-foreground: oklch(0.95 0.01 82);
+  --muted: oklch(0.245 0.018 62);
+  --muted-foreground: oklch(0.7 0.022 75);
+  --accent: oklch(0.78 0.13 68);
+  --accent-foreground: oklch(0.2 0.025 58);
   --destructive: oklch(0.6 0.19 25);
-  --destructive-foreground: oklch(0.98 0.003 250);
+  --destructive-foreground: oklch(0.98 0.003 82);
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.62 0.16 264);
+  --ring: oklch(0.82 0.16 82);
 
-  --surface: oklch(0.238 0.03 262);
+  --surface: oklch(0.238 0.02 62);
   --glass: oklch(1 0 0 / 4.5%);
   --glass-border: oklch(1 0 0 / 10%);
-  --success: oklch(0.74 0.14 165);
-  --warning: oklch(0.8 0.13 80);
+  --success: oklch(0.72 0.14 145);
+  --warning: oklch(0.8 0.13 68);
 
-  /* Refined, desaturated option hues — same family of tone, never neon */
-  --opt-1: oklch(0.58 0.14 264);  /* refined indigo   */
-  --opt-2: oklch(0.62 0.11 195);  /* deep teal        */
-  --opt-3: oklch(0.58 0.1 320);   /* muted plum       */
-  --opt-4: oklch(0.62 0.1 80);    /* soft sand        */
+  /* Warm, distinct answer colors that complement the gold brand accent. */
+  --opt-1: oklch(0.58 0.16 28);
+  --opt-2: oklch(0.58 0.13 145);
+  --opt-3: oklch(0.52 0.12 340);
+  --opt-4: oklch(0.68 0.14 78);
 }
 
 @layer base {
@@ -182,31 +182,22 @@
   z-index: -10;
   overflow: hidden;
   background:
-    radial-gradient(1100px 620px at 15% -10%, color-mix(in oklab, var(--primary) 14%, transparent), transparent 60%),
-    radial-gradient(900px 560px at 92% 108%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 60%),
+    radial-gradient(
+      1100px 620px at 15% -10%,
+      color-mix(in oklab, var(--primary) 14%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 560px at 92% 108%,
+      color-mix(in oklab, var(--accent) 10%, transparent),
+      transparent 60%
+    ),
     var(--background);
 }
 
-.ambient-grid {
+.ambient-logo {
   position: absolute;
-  inset: -20% -10%;
-  transform: perspective(1200px) rotateX(58deg);
-  transform-origin: 50% 100%;
-  opacity: 0.5;
-  background-image:
-    linear-gradient(to right, oklch(1 0 0 / 4%) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(1 0 0 / 4%) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, black 30%, transparent 75%);
-}
-
-.ambient-card {
-  position: absolute;
-  border-radius: 1.25rem;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 30px 60px -30px oklch(0 0 0 / 50%);
+  max-width: 132px;
   transform: translate3d(
       calc(var(--mx, 0) * var(--depth) * 120px),
       calc(var(--my, 0) * var(--depth) * 80px),
@@ -215,6 +206,16 @@
     rotate(var(--tilt, 0deg));
   transition: transform 0.1s linear;
   will-change: transform;
+}
+
+.ambient-logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  opacity: 0.3;
+  filter: drop-shadow(0 16px 24px oklch(0 0 0 / 35%));
+  user-select: none;
 }
 
 /* ---------- keyframe animations ---------- */
@@ -315,12 +316,7 @@
 }
 
 .podium-shimmer {
-  background: linear-gradient(
-    100deg,
-    transparent 20%,
-    oklch(1 0 0 / 8%) 50%,
-    transparent 80%
-  );
+  background: linear-gradient(100deg, transparent 20%, oklch(1 0 0 / 8%) 50%, transparent 80%);
   background-size: 200% 100%;
   animation: kq-shimmer 3.2s linear infinite;
 }

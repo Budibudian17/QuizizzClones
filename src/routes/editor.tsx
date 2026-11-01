@@ -1,8 +1,25 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, Clock3, Plus, Save, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  CircleHelp,
+  Clock3,
+  ClipboardPaste,
+  Plus,
+  Save,
+  Trash2,
+} from "lucide-react";
 
 import { AmbientBackground } from "@/components/AmbientBackground";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { parseQuizText } from "@/game/quiz-import";
 import { getHostUser, getOwnedQuiz, saveOwnedQuiz } from "@/game/supabase-quizzes";
 import { makeId, type Quiz, type QuizQuestion } from "@/game/types";
 
@@ -43,6 +60,10 @@ function EditorPage() {
   const [ownerId, setOwnerId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [showImport, setShowImport] = useState(false);
+  const [showImportGuide, setShowImportGuide] = useState(false);
+  const [importText, setImportText] = useState("");
+  const parsedImport = useMemo(() => parseQuizText(importText), [importText]);
 
   useEffect(() => {
     let active = true;
@@ -139,6 +160,25 @@ function EditorPage() {
     }
   };
 
+  const importQuestions = () => {
+    if (parsedImport.questions.length === 0 || parsedImport.errors.length > 0) return;
+    const isEmptyStarter =
+      quiz.questions.length === 1 &&
+      !quiz.questions[0]!.text.trim() &&
+      quiz.questions[0]!.options.every((option) => !option.trim());
+    const imported = parsedImport.questions.map((question) => ({
+      ...question,
+      id: makeId("q"),
+    }));
+
+    setQuiz({
+      ...quiz,
+      questions: isEmptyStarter ? imported : [...quiz.questions, ...imported],
+    });
+    setImportText("");
+    setShowImport(false);
+  };
+
   return (
     <div className="relative min-h-screen">
       <AmbientBackground />
@@ -195,6 +235,131 @@ function EditorPage() {
             ))}
           </ul>
         )}
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Soal ({quiz.questions.length})
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setShowImportGuide((open) => !open)}
+              aria-expanded={showImportGuide}
+              className="press-3d inline-flex items-center gap-2 rounded-xl border border-input bg-glass px-3 py-2 text-sm font-semibold text-foreground"
+            >
+              <CircleHelp className="h-4 w-4" />
+              Guide
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowImport((open) => !open)}
+              aria-expanded={showImport}
+              className="press-3d inline-flex items-center gap-2 rounded-xl border border-input bg-glass px-4 py-2 text-sm font-semibold text-foreground"
+            >
+              <ClipboardPaste className="h-4 w-4" />
+              {showImport ? "Tutup tempel soal" : "Tempel soal dari AI"}
+            </button>
+          </div>
+        </div>
+
+        <Dialog open={showImportGuide} onOpenChange={setShowImportGuide}>
+          <DialogContent className="max-h-[85dvh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-2xl border-glass-border bg-card p-5 sm:p-6">
+            <DialogHeader className="pr-7">
+              <DialogTitle className="font-display">Guide format soal</DialogTitle>
+              <DialogDescription>
+                Minta AI membuat soal bernomor, empat pilihan A–D, dan kunci jawaban untuk setiap
+                soal.
+              </DialogDescription>
+            </DialogHeader>
+            <pre className="overflow-x-auto rounded-xl border border-glass-border bg-black/15 p-3 text-xs leading-relaxed text-muted-foreground">
+              {`1. Contoh pertanyaan?
+A. Pilihan pertama
+B. Pilihan kedua
+C. Pilihan ketiga
+D. Pilihan keempat
+Jawaban: B
+
+2. Pertanyaan berikutnya?
+A. Pilihan pertama
+B. Pilihan kedua
+C. Pilihan ketiga
+D. Pilihan keempat
+Kunci jawaban: D`}
+            </pre>
+            <ul className="list-inside list-disc space-y-1 text-xs text-muted-foreground">
+              <li>
+                Awali setiap soal dengan nomor; setiap soal wajib punya pilihan A, B, C, dan D.
+              </li>
+              <li>Tulis kunci dengan format “Jawaban: B” atau “Kunci jawaban: B”.</li>
+              <li>Timer awal otomatis 20 detik dan bisa diubah setelah soal masuk.</li>
+            </ul>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showImport} onOpenChange={setShowImport}>
+          <DialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-2xl border-glass-border bg-card p-5 sm:p-6">
+            <DialogHeader className="pr-7">
+              <DialogTitle className="font-display">Tempel soal dari AI</DialogTitle>
+              <DialogDescription>
+                Tempel teks soal bernomor di bawah ini. Pastikan semua soal punya pilihan A–D dan
+                kunci jawaban.
+              </DialogDescription>
+            </DialogHeader>
+            <textarea
+              aria-label="Tempel teks soal"
+              value={importText}
+              onChange={(event) => setImportText(event.target.value)}
+              placeholder="Tempel semua soal di sini…"
+              rows={8}
+              className="min-h-36 w-full resize-y rounded-xl border border-input bg-glass px-4 py-3 font-mono text-sm leading-relaxed outline-none placeholder:text-muted-foreground/50 focus:border-primary/60 sm:min-h-48"
+            />
+            {importText.trim() && (
+              <div aria-live="polite" className="mt-3 space-y-2">
+                {parsedImport.errors.length > 0 ? (
+                  <ul role="alert" className="space-y-1 text-sm text-destructive">
+                    {parsedImport.errors.map((message) => (
+                      <li key={message}>{message}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-success">
+                      {parsedImport.questions.length} soal siap ditambahkan.
+                    </p>
+                    <ol className="max-h-36 list-inside list-decimal space-y-1 overflow-y-auto text-xs text-muted-foreground">
+                      {parsedImport.questions.map((question) => (
+                        <li key={`${question.text}-${question.correctIndex}`}>
+                          {question.text} — kunci {String.fromCharCode(65 + question.correctIndex)}
+                        </li>
+                      ))}
+                    </ol>
+                  </>
+                )}
+              </div>
+            )}
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowImport(false);
+                  setImportText("");
+                }}
+                className="rounded-xl border border-input bg-glass px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={importQuestions}
+                disabled={parsedImport.questions.length === 0 || parsedImport.errors.length > 0}
+                className="press-3d inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+              >
+                <ClipboardPaste className="h-4 w-4" />
+                Tambahkan soal
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <div className="mt-6 space-y-4">
           {quiz.questions.map((question, qi) => (

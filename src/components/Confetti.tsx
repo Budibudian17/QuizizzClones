@@ -12,7 +12,7 @@ type Particle = {
   life: number;
 };
 
-const PALETTE = ["#8b93ff", "#3fd6c2", "#e6ebf5", "#b3b9f2", "#63e0c8"];
+const PALETTE = ["#ffc20e", "#d8893a", "#f4ead2", "#a9b879", "#d9654f"];
 const BURST_MS = 1400;
 
 /**
