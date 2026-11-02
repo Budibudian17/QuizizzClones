@@ -187,7 +187,25 @@ function JoinForm({
       else if (message.includes("game-in-progress"))
         setError(ERROR_TEXT["game-in-progress"] ?? "Permainan sudah dimulai.");
       else if (message.includes("nickname-required")) setError("Isi nickname dulu ya.");
-      else setError("Gagal bergabung. Pastikan PIN benar dan coba lagi.");
+      else if (/anonymous|sign.?up|signup/i.test(message)) {
+        setError(
+          "Sesi pemain anonim gagal dibuat. Aktifkan Anonymous Sign-Ins di Supabase Authentication, lalu coba lagi.",
+        );
+      } else if (/missing vite_supabase_url|missing vite_supabase_publishable_key/i.test(message)) {
+        setError(
+          "Konfigurasi Supabase belum tersedia di deployment. Atur VITE_SUPABASE_URL dan VITE_SUPABASE_PUBLISHABLE_KEY di Vercel, lalu deploy ulang.",
+        );
+      } else if (/failed to fetch|networkerror|load failed/i.test(message)) {
+        setError(
+          "Tidak dapat terhubung ke Supabase. Periksa konfigurasi VITE_SUPABASE_* di Vercel dan koneksi project Supabase.",
+        );
+      } else {
+        setError(
+          message
+            ? `Gagal bergabung: ${message}`
+            : "Gagal bergabung karena terjadi kesalahan yang tidak diketahui. Coba lagi.",
+        );
+      }
     } finally {
       setBusy(false);
     }
@@ -236,7 +254,11 @@ function JoinForm({
         className="mt-3 w-full rounded-2xl border border-input bg-glass px-4 py-3.5 text-center text-sm font-medium outline-none placeholder:text-muted-foreground/50 focus:border-primary/60"
       />
 
-      {error && <p className="mt-3 text-xs leading-relaxed text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-3 text-xs leading-relaxed text-destructive">
+          {error}
+        </p>
+      )}
 
       <button
         onClick={submit}

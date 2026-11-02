@@ -73,6 +73,13 @@ Before running the app:
 3. Ensure the Email provider is enabled for host accounts.
 4. Restart the Vite dev server after changing `.env.local`.
 
+For Vercel deployments, add `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_PUBLISHABLE_KEY` under **Project Settings → Environment Variables**
+for each environment you deploy (Production, Preview, and/or Development), then
+redeploy so Vite can include them in the client build. Also apply the database
+migration above and enable **Anonymous Sign-Ins** in the same Supabase project;
+players need anonymous auth before they can join with a PIN.
+
 The migration adds Row Level Security and RPCs for joining rooms, starting games,
 submitting answers, scoring, and advancing phases. Correct answers are withheld
 from players until their question is revealed. The dashboard loads quizzes only
