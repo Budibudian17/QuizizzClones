@@ -16,13 +16,22 @@ dist-ssr
 .nitro
 *.local
 coverage
+*.tsbuildinfo
+.eslintcache
+.vercel/
+.turbo/
+
+# Local tooling and agent configuration
+bun.lock
+bunfig.toml
+AGENTS.md
 
 # Local environment files (keep the example template in Git)
 .env*
 !.env.example
 !.env.*.example
 
-# Lovable editor metadata
+# Local editor metadata
 .lovable/
 
 # Wrangler / Cloudflare
@@ -34,6 +43,8 @@ coverage
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
+desktop.ini
 *.suo
 *.ntvs*
 *.njsproj
