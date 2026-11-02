@@ -1,155 +1,105 @@
-# Quiz Nusantara Arena
+# Quizverse
 
-Create a comprehensive, production-ready real-time multiplayer quiz web application (core mechanics similar to Kahoot/Quizizz) designed for a fresh project rebuild. The application must feature a highly aesthetic, modern minimalist dark-mode theme with subtle, sophisticated 3D elements and smooth professional animations.
+### Quiz Nusantara Arena
 
-CRITICAL TYPOGRAPHY & FONT DIRECTION:
+Bikin kuis, ajak teman masuk lewat PIN, dan adu cepat menjawab. Mau latihan
+sendiri dulu? Ada juga mode solo dengan statistik untuk akun pemain.
 
-- Strictly avoid generic "AI-style" fonts, overused robotic/futuristic tech typography, or stock geometric block fonts.
-- Use a professional, clean, and highly readable modern font pair available via standard Google Fonts.
-- Headings & Game PIN: Use a sophisticated sans-serif with subtle character like "Plus Jakarta Sans" or "Syne" (weighted heavily for headers/large numbers to look custom and polished).
-- Body Text, Options, & Interface Elements: Use a clean, highly legible, professional neo-grotesque font like "Inter" or "Instrument Sans".
-- Ensure clean line-heights, meticulous tracking (letter-spacing), and prominent typographic hierarchy so the platform looks like a high-end, bespoke digital product.
+<p align="center">
+  <img src="./public/img/logo.webp" alt="Logo Quizverse" width="420" />
+</p>
 
-VISUAL DIRECTION & DESIGN SYSTEM:
+<p align="center">
+  <img src="./public/img/coverweb.webp" alt="Tampilan halaman utama Quizverse" width="100%" />
+</p>
 
-- Strictly avoid overly bright, multi-colored neon, or generic "AI-generated" space/cyberpunk styles.
-- Use a refined, premium dark palette: warm charcoal backgrounds, crisp ivory typography, and golden yellow accents complemented by muted earth tones.
-- Visual elements should look clean, spacious, and flat, but enhanced with subtle 3D depth (e.g., precise glassmorphism, smooth CSS 3D transforms, or lightweight Three.js canvas layer).
-- Use direct SVG icons (Lucide) natively. Ensure everything is mobile-responsive and feels like a premium modern SaaS product.
+## Fitur
 
-CORE ARCHITECTURE & INTERFACES (Single Page Application State):
+- **Main bareng:** host membuat kuis dan membagikan PIN; pemain bisa bergabung
+  sebagai guest atau menggunakan akun.
+- **Kuis buatan sendiri atau API:** host dapat menulis soal sendiri atau
+  mengambil soal dari Open Trivia Database.
+- **Permainan real-time:** lobby, soal, timer, skor, dan peringkat tersinkron
+  untuk host dan pemain.
+- **Latihan solo:** kerjakan soal OpenTDB dengan pilihan kategori, kesulitan,
+  bahasa, dan batas waktu.
+- **Akun pemain:** simpan statistik latihan solo dan statistik multiplayer.
+- **Tampilan responsif:** pilihan tema Emas, Samudra, dan Hutan.
 
-1. HOST VIEW (Dashboard & Creator):
+## Mulai di komputer lokal
 
-- A clean, minimalist creator dashboard displaying only quizzes saved by the signed-in host.
-- Quiz Editor interface allowing the host to add/edit multiple-choice questions (up to 4 options), select the correct answer, and configure a custom countdown timer (10s, 20s, 30s) per question.
-- "Launch Game" button that instantly generates a unique 6-digit Game PIN and opens the game lobby.
+**Yang dibutuhkan:** Node.js, npm, dan project Supabase.
 
-2. REAL-TIME SYNCHRONIZED LOBBY:
+```bash
+git clone <url-repository>
+cd <folder-repository>
+npm ci
+```
 
-- Host Lobby Interface: Displays the 6-digit Game PIN in large, crisp typography, a "Start Game" action button, and a dynamic grid showing joined players.
-- Player Join Screen: A centered, clean minimalist input card prompting users for a "Game PIN" and "Nickname".
-- Player Waiting Lobby: Once joined, players see a beautiful waiting screen where other active players' nameplates animate into view smoothly with a subtle 3D hover-scale transition.
-- Sync State: Clicking "Start Game" on the Host screen must automatically and simultaneously transition all connected players' screens into the active quiz countdown without manual refresh.
+Salin `.env.example` menjadi `.env.local`, lalu isi kredensial Supabase:
 
-3. ELEVATED ANIMATIONS & SUBTLE 3D EFFECTS:
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+```
 
-- Background: A minimalist ambient layer featuring subtle, low-intensity 3D geometric grids or abstract floating cards that gently shift in response to cursor movement.
-- Holographic Circular Timer: A crisp, minimalist 3D-like circular progress ring countdown that shrinks smoothly and pulses gently when time drops below 5 seconds.
-- Scoreboard Celebrations: Correct answers trigger an elegant, confined 3D confetti burst that respects the clean UI layout without cluttering the user interface.
+Terapkan konfigurasi Supabase di bawah, lalu jalankan:
 
-4. CORE GAMEPLAY MECHANICS:
-
-- Host Active Screen: Displays the ongoing Indonesian university question, the ticking countdown ring, and the real-time count of submitted answers. Once time expires, it reveals a clean, minimalist bar chart of answer distribution alongside the correct choice.
-- Player Active Screen: Displays 4 large, clean, geometric flat choice buttons with distinct, satisfying 3D press states. Fast responses earn a decaying speed-multiplier bonus score.
-- Leaderboard & Final Podium: Displays a top-5 ranking transition between questions. Conclude the entire game with a premium 3D Podium layout (1st, 2nd, and 3rd place) featuring clean rising animations for the winners' cards and a subtle spotlight effect.
-
-IMPLEMENTATION DETAIL:
-The multiplayer flow uses Supabase Auth, Postgres RPCs, Row Level Security, and
-Supabase Realtime so hosts and players can join from separate devices.
-
-## Supabase setup
-
-Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local` for
-local development and in the deployment environment for production. See
-`.env.example` for the expected variable names. Vite uses the `VITE_` prefix
-instead of Next.js's `NEXT_PUBLIC_` prefix.
-
-The browser and server clients are configured for cookie-backed Supabase Auth.
-TanStack Start request middleware refreshes an existing session. Host accounts
-use email/password auth; players join with temporary anonymous auth sessions.
-Quizzes, rooms, player answers, scoring, and phase transitions are stored in
-Supabase, with room updates delivered through Supabase Realtime.
-
-The theme picker offers Emas, Samudra, and Hutan color palettes. The selected
-theme is saved in browser localStorage and applies across the app on that browser.
-Ambient backgrounds retrieve public university logo images at runtime; image
-assets are not stored in this repository. UI, ITB, UGM, and ITS thumbnails come
-from their Indonesian Wikipedia articles ([UI](https://id.wikipedia.org/wiki/Universitas_Indonesia),
-[ITB](https://id.wikipedia.org/wiki/Institut_Teknologi_Bandung),
-[UGM](https://id.wikipedia.org/wiki/Universitas_Gadjah_Mada), and
-[ITS](https://id.wikipedia.org/wiki/Institut_Teknologi_Sepuluh_Nopember)). IPB's
-transparent seal comes from the [official IPB website](https://www.ipb.ac.id/wp-content/uploads/2023/03/cropped-logo_ipb_80-192x192.png).
-Logos are displayed for decoration only. Their respective owners retain trademark
-and image rights.
-
-Before running the app:
-
-1. Apply the SQL migrations in `supabase/migrations/` in filename order, including
-   `20261102191500_public_practice_quizzes.sql` and
-   `20261102192000_practice_requires_account.sql` and
-   `20261103021700_solo_practice_stats.sql`.
-2. Enable **Anonymous Sign-Ins** in Supabase Authentication settings for players.
-3. Ensure the Email provider is enabled for host and player accounts.
-4. Restart the Vite dev server after changing `.env.local`.
-
-For Vercel deployments, add `VITE_SUPABASE_URL` and
-`VITE_SUPABASE_PUBLISHABLE_KEY` under **Project Settings → Environment Variables**
-for each environment you deploy (Production, Preview, and/or Development), then
-redeploy so Vite can include them in the client build. Also apply the database
-migration above and enable **Anonymous Sign-Ins** in the same Supabase project;
-players need anonymous auth before they can join with a PIN.
-For player account email confirmation, add the deployed `/player-dashboard` and
-`/practice` URLs (and their local development URLs if needed) to
-**Authentication → URL Configuration → Redirect URLs**.
-
-The `20261102180000_player_accounts_stats.sql` migration keeps opponent score
-totals private from players and adds account-only, completed-game statistics.
-Guests can still join and play but do not get persistent cross-game stats.
-
-Players choose **Akun & statistik** on `/join` to open their dedicated player
-dashboard, where they can join a game, view statistics, or open **Latihan solo**.
-They must sign in with a permanent player account. Solo practice retrieves
-multiple-choice questions from the Open Trivia Database (OpenTDB), with
-category, difficulty, and question-count options. OpenTDB questions are
-generally in English and are licensed under CC BY-SA 4.0; the practice screen
-provides source attribution. Players can choose English or Indonesian for API
-questions. Indonesian uses the public MyMemory translation API; its anonymous
-service has a daily character limit, so untranslated text falls back to the
-original language. No API key is required.
-
-Completed solo practice results are saved separately from multiplayer results
-for signed-in player accounts. The statistics screen keeps solo accuracy
-separate from multiplayer win rate; solo sessions do not count as multiplayer
-wins or affect multiplayer win rate.
-
-For multiplayer games, hosts can write questions in the editor or replace the
-quiz question list with questions fetched from OpenTDB. API questions remain
-editable before saving and launching the game. The editor and multiplayer
-question screens attribute OpenTDB, whose question data is licensed under
-CC BY-SA 4.0.
-
-The migration adds Row Level Security and RPCs for joining rooms, starting games,
-submitting answers, scoring, and advancing phases. Correct answers are withheld
-from players until their question is revealed. The dashboard loads quizzes only
-from the signed-in host's database records. New accounts start with an empty quiz
-list; no sample quizzes or localStorage quiz data are seeded into the database.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+```bash
 npm run dev
 ```
 
-### Coba permainan
+Buka alamat lokal yang ditampilkan Vite di terminal.
 
-1. Buka `http://localhost:8080/`, masuk ke dashboard host, lalu luncurkan kuis.
-2. Buat akun host atau masuk, lalu gabungkan minimal 4 pemain asli melalui halaman Join.
-3. Mulai permainan dari tab host. Setelah menjawab, pemain masuk ke layar timer saja; ronde berlanjut saat semua pemain menjawab atau waktu habis.
+## Konfigurasi Supabase
 
-PIN dapat disalin dari lobby host. Pada layar soal, host dapat memantau pemain yang sudah menjawab dan yang masih menunggu. Sesi pemain disimpan di Supabase Auth agar bisa dipulihkan setelah refresh.
+Jalankan migration SQL berikut **berurutan** dari `supabase/migrations/`:
 
-Untuk berlatih sendiri, pilih **Latihan solo** dari beranda, masuk dengan akun pemain,
-pilih kuis publik, lalu pilih batas waktu keseluruhan (default 2 menit, bisa dipilih
-1, 2, 3, atau 5 menit). Tidak perlu masuk sebagai host atau memakai PIN.
+1. `20261101000000_kampusquiz_backend.sql`
+2. `20261102180000_player_accounts_stats.sql`
+3. `20261102191500_public_practice_quizzes.sql`
+4. `20261102192000_practice_requires_account.sql`
+5. `20261103021700_solo_practice_stats.sql`
 
-## Credits
+Di Supabase Authentication:
 
-Made by Himi.
+- Aktifkan provider **Email** untuk akun host dan pemain.
+- Aktifkan **Anonymous Sign-Ins** agar guest dapat bergabung ke game.
+- Tambahkan URL `/player-dashboard` dan `/practice` pada **URL Configuration →
+  Redirect URLs**, termasuk URL production dan lokal yang digunakan.
 
-# QuizizzClones
+Kuis dan sesi multiplayer disimpan di Supabase. Row Level Security membatasi
+akses data; skor pemain lain tidak ditampilkan kepada pemain.
+
+## Deployment ke Vercel
+
+Tambahkan `VITE_SUPABASE_URL` dan `VITE_SUPABASE_PUBLISHABLE_KEY` pada
+**Project Settings → Environment Variables** untuk environment yang digunakan,
+kemudian deploy. Pastikan migration sudah diterapkan dan pengaturan Authentication
+Supabase di atas sudah aktif.
+
+## Soal dan atribusi
+
+Mode latihan solo dan sumber soal API multiplayer menggunakan
+[Open Trivia Database](https://opentdb.com/). Soal OpenTDB berlisensi
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) dan atribusinya
+ditampilkan di aplikasi. Terjemahan bahasa Indonesia menggunakan layanan publik
+MyMemory; bila layanan mencapai batas penggunaan, soal dapat tampil dalam bahasa
+aslinya.
+
+Logo kampus pada background dimuat dari Wikipedia Indonesia dan situs resmi IPB.
+Logo digunakan sebagai elemen dekoratif; hak atas merek dan gambar tetap milik
+pemegangnya.
+
+## Perintah pengembangan
+
+```bash
+npm run dev       # Jalankan server lokal
+npm run lint      # Periksa lint
+npm test          # Jalankan test
+npm run build     # Build production
+```
+
+---
+
+<p align="center">Made by Himi · Quiz Nusantara Arena</p>
