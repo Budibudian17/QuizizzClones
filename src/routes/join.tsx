@@ -1,8 +1,19 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CheckCircle2, Crown, Home, Loader2, Trophy, User, Users, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Crown,
+  Home,
+  Loader2,
+  Trophy,
+  User,
+  Users,
+  XCircle,
+} from "lucide-react";
 
 import { AmbientBackground } from "@/components/AmbientBackground";
+import { ThemePicker } from "@/components/ThemePicker";
 import { TimerRing } from "@/components/TimerRing";
 import { ConfettiBurst } from "@/components/Confetti";
 import { FinalStandings, Leaderboard, Podium } from "@/components/Results";
@@ -103,6 +114,9 @@ function JoinPage() {
   return (
     <div className="relative min-h-screen">
       <AmbientBackground />
+      <div className="fixed right-4 top-4 z-40">
+        <ThemePicker />
+      </div>
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col items-center justify-center px-5 py-10">
         {!active || !me ? (
           <JoinForm restoreError={restoreError} onJoined={setSession} />
@@ -181,6 +195,15 @@ function JoinForm({
 
   return (
     <section className="panel anim-pop w-full max-w-sm rounded-3xl p-8 text-center">
+      <div className="mb-5 flex justify-start">
+        <Link
+          to="/"
+          className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Kembali
+        </Link>
+      </div>
       <h1 className="font-display text-2xl font-extrabold tracking-tight">Gabung Permainan</h1>
       <p className="mt-1.5 text-sm text-muted-foreground">
         Masukkan 6-digit Game PIN dari layar host

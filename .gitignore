@@ -15,6 +15,15 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+coverage
+
+# Local environment files (keep the example template in Git)
+.env*
+!.env.example
+!.env.*.example
+
+# Lovable editor metadata
+.lovable/
 
 # Wrangler / Cloudflare
 .wrangler/

@@ -12,7 +12,11 @@ type Particle = {
   life: number;
 };
 
-const PALETTE = ["#ffc20e", "#d8893a", "#f4ead2", "#a9b879", "#d9654f"];
+const PALETTES = {
+  gold: ["#ffc20e", "#d8893a", "#f4ead2", "#a9b879", "#d9654f"],
+  ocean: ["#59a7ff", "#38c6c3", "#e7f2ff", "#c5a5ff", "#f2c14e"],
+  forest: ["#83c98b", "#d4a84e", "#e8f0d7", "#d8893a", "#b8a5d6"],
+} as const;
 const BURST_MS = 1400;
 
 /**
@@ -29,6 +33,9 @@ export function ConfettiBurst({ burst }: { burst: number }) {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    const activeTheme = document.documentElement.dataset["theme"];
+    const palette =
+      activeTheme === "ocean" || activeTheme === "forest" ? PALETTES[activeTheme] : PALETTES.gold;
 
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const rect = canvas.getBoundingClientRect();
@@ -49,7 +56,7 @@ export function ConfettiBurst({ burst }: { burst: number }) {
         size: 4 + Math.random() * 6,
         rot: Math.random() * Math.PI,
         vr: (Math.random() - 0.5) * 12,
-        color: PALETTE[i % PALETTE.length] ?? PALETTE[0]!,
+        color: palette[i % palette.length] ?? palette[0],
         life: 1,
       });
     }

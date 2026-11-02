@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, Gamepad2, LoaderCircle, LockKeyhole, Pencil, UserPlus } from "lucide-react";
 
 import { AmbientBackground } from "@/components/AmbientBackground";
+import { ThemePicker } from "@/components/ThemePicker";
 import { createClient } from "@/utils/supabase/client";
 
 export const Route = createFileRoute("/")({
@@ -109,6 +110,9 @@ function HomePage() {
   return (
     <div className="relative min-h-screen">
       <AmbientBackground />
+      <div className="fixed right-4 top-4 z-40">
+        <ThemePicker />
+      </div>
       <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col items-center justify-center px-5 py-12 sm:px-8">
         <div className="flex items-center gap-3">
           <img src="/img/logo.webp" alt="Quizverse" className="h-auto w-48" />

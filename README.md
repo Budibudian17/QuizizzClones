@@ -63,6 +63,9 @@ use email/password auth; players join with temporary anonymous auth sessions.
 Quizzes, rooms, player answers, scoring, and phase transitions are stored in
 Supabase, with room updates delivered through Supabase Realtime.
 
+The theme picker offers Emas, Samudra, and Hutan color palettes. The selected
+theme is saved in browser localStorage and applies across the app on that browser.
+
 Before running the app:
 
 1. Apply `supabase/migrations/20261101000000_kampusquiz_backend.sql` to the project.

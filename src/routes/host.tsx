@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { AmbientBackground } from "@/components/AmbientBackground";
+import { ThemePicker } from "@/components/ThemePicker";
 import { TimerRing } from "@/components/TimerRing";
 import { ConfettiBurst } from "@/components/Confetti";
 import { FinalStandings, Leaderboard, Podium } from "@/components/Results";
@@ -147,10 +148,11 @@ function HostPage() {
             <ArrowLeft className="h-4 w-4" />
             Dasbor
           </Link>
-          <div className="flex items-center gap-2">
-            <span className="glass rounded-full px-4 py-2 font-display text-sm font-semibold tracking-tight">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="glass hidden max-w-56 truncate rounded-full px-4 py-2 font-display text-sm font-semibold tracking-tight sm:inline-block">
               {quiz.title}
             </span>
+            <ThemePicker />
             <button
               onClick={() => {
                 if (!roomId) return;

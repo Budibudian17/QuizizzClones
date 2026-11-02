@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { AmbientBackground } from "@/components/AmbientBackground";
+import { ThemePicker } from "@/components/ThemePicker";
 import {
   Dialog,
   DialogContent,
@@ -191,14 +192,17 @@ function EditorPage() {
             <ArrowLeft className="h-4 w-4" />
             Dasbor
           </Link>
-          <button
-            onClick={() => void save()}
-            disabled={problems.length > 0 || saving}
-            className="press-3d inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-40"
-          >
-            <Save className="h-4 w-4" />
-            {saving ? "Menyimpan…" : "Simpan kuis"}
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemePicker />
+            <button
+              onClick={() => void save()}
+              disabled={problems.length > 0 || saving}
+              className="press-3d inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-40 sm:px-5"
+            >
+              <Save className="h-4 w-4" />
+              <span className="hidden sm:inline">{saving ? "Menyimpan…" : "Simpan kuis"}</span>
+            </button>
+          </div>
         </header>
         {error && (
           <p role="alert" className="mt-4 text-sm text-destructive">

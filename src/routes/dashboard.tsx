@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { LogOut, MonitorPlay, Pencil, Play, Plus, Trash2, Trophy, Users } from "lucide-react";
 
 import { AmbientBackground } from "@/components/AmbientBackground";
+import { ThemePicker } from "@/components/ThemePicker";
 import { deleteOwnedQuiz, getHostUser, loadOwnedQuizzes } from "@/game/supabase-quizzes";
 import type { Quiz } from "@/game/types";
 import { createClient } from "@/utils/supabase/client";
@@ -86,13 +87,16 @@ function Dashboard() {
           <div className="flex items-center gap-3">
             <img src="/img/logo.webp" alt="Quizverse" className="h-auto w-36" />
           </div>
-          <button
-            onClick={() => void signOut()}
-            className="glass inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <LogOut className="h-4 w-4" />
-            Keluar
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemePicker />
+            <button
+              onClick={() => void signOut()}
+              className="glass inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Keluar</span>
+            </button>
+          </div>
         </header>
 
         <main className="flex flex-1 flex-col pt-12">
