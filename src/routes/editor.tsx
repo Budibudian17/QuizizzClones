@@ -6,11 +6,15 @@ import {
   CircleHelp,
   Clock3,
   ClipboardPaste,
+  FileUp,
   Globe2,
+  LoaderCircle,
   Plus,
   Save,
+  Sparkles,
   Trash2,
 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 
 import { AmbientBackground } from "@/components/AmbientBackground";
 import { ThemePicker } from "@/components/ThemePicker";
@@ -22,6 +26,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { parseQuizText } from "@/game/quiz-import";
+import { generateQuizFromMaterial, type GeneratedMaterialQuestion } from "@/game/ai-quiz";
+import { extractQuizMaterialText } from "@/game/quiz-material";
 import {
   fetchTriviaQuiz,
   loadTriviaCategories,
@@ -71,6 +77,15 @@ function EditorPage() {
   const [showImport, setShowImport] = useState(false);
   const [showImportGuide, setShowImportGuide] = useState(false);
   const [showApiImport, setShowApiImport] = useState(false);
+  const [showMaterialImport, setShowMaterialImport] = useState(false);
+  const [materialFile, setMaterialFile] = useState<File | null>(null);
+  const [materialInstructions, setMaterialInstructions] = useState("");
+  const [materialQuestionCount, setMaterialQuestionCount] = useState("10");
+  const [materialBusy, setMaterialBusy] = useState(false);
+  const [materialError, setMaterialError] = useState("");
+  const [generatedMaterialQuestions, setGeneratedMaterialQuestions] = useState<
+    GeneratedMaterialQuestion[]
+  >([]);
   const [apiCategories, setApiCategories] = useState<TriviaCategory[]>([]);
   const [apiCategory, setApiCategory] = useState("");
   const [apiDifficulty, setApiDifficulty] = useState("");
@@ -80,6 +95,80 @@ function EditorPage() {
   const [apiError, setApiError] = useState("");
   const [importText, setImportText] = useState("");
   const parsedImport = useMemo(() => parseQuizText(importText), [importText]);
+  const generateMaterialQuestions = useServerFn(generateQuizFromMaterial);
+
+  const generateQuestionsFromFile = async () => {
+    if (!materialFile) return;
+    setMaterialBusy(true);
+    setMaterialError("");
+    setGeneratedMaterialQuestions([]);
+    try {
+      const material = await extractQuizMaterialText(materialFile);
+      const questions = await generateMaterialQuestions({
+        data: {
+          material,
+          questionCount: Number(materialQuestionCount),
+          instructions: materialInstructions,
+        },
+      });
+      setGeneratedMaterialQuestions(questions);
+    } catch (cause: unknown) {
+      console.error("Failed to generate quiz questions from uploaded material.", cause);
+      setMaterialError(
+        cause instanceof Error ? cause.message : "Gagal membuat soal dari file materi.",
+      );
+    } finally {
+      setMaterialBusy(false);
+    }
+  };
+
+  const updateGeneratedQuestion = (
+    questionIndex: number,
+    patch: Partial<GeneratedMaterialQuestion>,
+  ) => {
+    setGeneratedMaterialQuestions((current) =>
+      current.map((question, index) =>
+        index === questionIndex ? { ...question, ...patch } : question,
+      ),
+    );
+  };
+
+  const addGeneratedQuestions = () => {
+    if (!quiz || !materialFile || generatedMaterialQuestions.length === 0) return;
+    if (
+      generatedMaterialQuestions.some(
+        (question) => !question.text.trim() || question.options.some((option) => !option.trim()),
+      )
+    ) {
+      setMaterialError("Lengkapi teks pertanyaan dan semua pilihan sebelum menambahkan.");
+      return;
+    }
+
+    const isEmptyStarter =
+      quiz.questions.length === 1 &&
+      !quiz.questions[0]!.text.trim() &&
+      quiz.questions[0]!.options.every((option) => !option.trim());
+    const imported = generatedMaterialQuestions.map((question) => ({
+      ...question,
+      id: makeId("q"),
+      timerSec: 20 as const,
+    }));
+    const fileTitle = materialFile.name.replace(/\.(pptx|pdf)$/i, "").trim();
+
+    setQuiz({
+      ...quiz,
+      title: quiz.title.trim() || fileTitle || "Kuis dari materi",
+      description:
+        quiz.description.trim() ||
+        `Soal dibuat dengan Gemini dari materi: ${materialFile.name}. Periksa kembali sebelum bermain.`,
+      questions: isEmptyStarter ? imported : [...quiz.questions, ...imported],
+    });
+    setGeneratedMaterialQuestions([]);
+    setMaterialFile(null);
+    setMaterialInstructions("");
+    setMaterialError("");
+    setShowMaterialImport(false);
+  };
 
   useEffect(() => {
     if (!showApiImport || apiCategories.length > 0) return;
@@ -327,6 +416,17 @@ function EditorPage() {
             </button>
             <button
               type="button"
+              onClick={() => {
+                setMaterialError("");
+                setShowMaterialImport(true);
+              }}
+              className="press-3d inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary"
+            >
+              <Sparkles className="h-4 w-4" />
+              Buat soal dari file
+            </button>
+            <button
+              type="button"
               onClick={() => setShowImportGuide((open) => !open)}
               aria-expanded={showImportGuide}
               className="press-3d inline-flex items-center gap-2 rounded-xl border border-input bg-glass px-3 py-2 text-sm font-semibold text-foreground"
@@ -446,6 +546,203 @@ function EditorPage() {
                   : apiBusy
                     ? "Mengambil soal…"
                     : "Ganti dengan soal API"}
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={showMaterialImport}
+          onOpenChange={(open) => {
+            setShowMaterialImport(open);
+            if (!open && !materialBusy) setMaterialError("");
+          }}
+        >
+          <DialogContent className="max-h-[92dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-2xl border-glass-border bg-card p-5 sm:p-6">
+            <DialogHeader className="pr-7">
+              <DialogTitle className="font-display">Buat soal dari materi</DialogTitle>
+              <DialogDescription>
+                Unggah PPTX atau PDF. Teks materi akan diproses dengan Gemini untuk membuat pilihan
+                ganda; soal dan kunci jawabannya bisa kamu periksa sebelum ditambahkan.
+              </DialogDescription>
+            </DialogHeader>
+
+            <label className="block text-sm font-semibold">
+              File materi
+              <input
+                type="file"
+                accept=".pptx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                onChange={(event) => {
+                  setMaterialFile(event.target.files?.[0] ?? null);
+                  setGeneratedMaterialQuestions([]);
+                  setMaterialError("");
+                }}
+                disabled={materialBusy}
+                className="mt-2 block w-full cursor-pointer rounded-xl border border-input bg-background/60 px-3 py-3 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary/15 file:px-3 file:py-2 file:font-semibold file:text-primary"
+              />
+            </label>
+            {materialFile && (
+              <p className="text-xs text-muted-foreground">
+                {materialFile.name} · {(materialFile.size / 1024 / 1024).toFixed(1)} MB
+              </p>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="text-sm font-semibold">
+                Jumlah soal
+                <select
+                  value={materialQuestionCount}
+                  onChange={(event) => setMaterialQuestionCount(event.target.value)}
+                  disabled={materialBusy}
+                  className="mt-2 w-full rounded-xl border border-input bg-background/60 px-3 py-3 text-sm font-normal"
+                >
+                  {[5, 10, 15, 20].map((amount) => (
+                    <option key={amount} value={amount}>
+                      {amount} soal
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-sm font-semibold">
+                Fokus tambahan <span className="font-normal text-muted-foreground">(opsional)</span>
+                <input
+                  value={materialInstructions}
+                  onChange={(event) => setMaterialInstructions(event.target.value)}
+                  maxLength={500}
+                  disabled={materialBusy}
+                  placeholder="mis. fokus pada bab 2"
+                  className="mt-2 w-full rounded-xl border border-input bg-background/60 px-3 py-3 text-sm font-normal"
+                />
+              </label>
+            </div>
+
+            <p className="rounded-xl border border-glass-border bg-glass px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
+              File dibaca di browser; hanya teks hasil ekstraksi yang dikirim ke Gemini. Maksimal 15
+              MB, 100 halaman/slide, dan 50.000 karakter. Teks di dalam gambar atau PDF hasil scan
+              tidak terbaca. Jangan unggah materi rahasia atau data pribadi.
+            </p>
+
+            {materialError && (
+              <p role="alert" className="text-sm text-destructive">
+                {materialError}
+              </p>
+            )}
+
+            {generatedMaterialQuestions.length > 0 && (
+              <section className="space-y-3">
+                <div>
+                  <h3 className="text-sm font-semibold">
+                    Periksa hasil ({generatedMaterialQuestions.length})
+                  </h3>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Pilih radio pada jawaban yang benar. Semua soal masih bisa diedit.
+                  </p>
+                </div>
+                <div className="max-h-[38dvh] space-y-3 overflow-y-auto pr-1">
+                  {generatedMaterialQuestions.map((question, questionIndex) => (
+                    <article
+                      key={questionIndex}
+                      className="rounded-xl border border-glass-border bg-glass p-3"
+                    >
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          Soal {questionIndex + 1}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={`Hapus soal ${questionIndex + 1}`}
+                          onClick={() =>
+                            setGeneratedMaterialQuestions((current) =>
+                              current.filter((_, index) => index !== questionIndex),
+                            )
+                          }
+                          className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <textarea
+                        aria-label={`Pertanyaan ${questionIndex + 1}`}
+                        value={question.text}
+                        onChange={(event) =>
+                          updateGeneratedQuestion(questionIndex, { text: event.target.value })
+                        }
+                        rows={2}
+                        className="w-full resize-y rounded-lg border border-input bg-background/60 px-3 py-2 text-sm"
+                      />
+                      <div className="mt-2 space-y-2">
+                        {question.options.map((option, optionIndex) => (
+                          <label
+                            key={optionIndex}
+                            className="flex items-start gap-2 rounded-lg border border-input bg-background/40 p-2"
+                          >
+                            <input
+                              type="radio"
+                              name={`generated-correct-${questionIndex}`}
+                              checked={question.correctIndex === optionIndex}
+                              onChange={() =>
+                                updateGeneratedQuestion(questionIndex, {
+                                  correctIndex: optionIndex,
+                                })
+                              }
+                              aria-label={`Tandai pilihan ${String.fromCharCode(65 + optionIndex)} sebagai jawaban benar`}
+                              className="mt-2 accent-primary"
+                            />
+                            <span className="pt-1 text-xs font-semibold text-muted-foreground">
+                              {String.fromCharCode(65 + optionIndex)}
+                            </span>
+                            <input
+                              aria-label={`Pilihan ${String.fromCharCode(65 + optionIndex)} soal ${questionIndex + 1}`}
+                              value={option}
+                              onChange={(event) =>
+                                updateGeneratedQuestion(questionIndex, {
+                                  options: question.options.map((currentOption, index) =>
+                                    index === optionIndex ? event.target.value : currentOption,
+                                  ),
+                                })
+                              }
+                              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowMaterialImport(false)}
+                disabled={materialBusy}
+                className="rounded-xl border border-input bg-glass px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-40"
+              >
+                Batal
+              </button>
+              {generatedMaterialQuestions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={addGeneratedQuestions}
+                  className="press-3d inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+                >
+                  <Check className="h-4 w-4" />
+                  Tambahkan ke editor
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => void generateQuestionsFromFile()}
+                disabled={!materialFile || materialBusy}
+                className="press-3d inline-flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary disabled:opacity-40"
+              >
+                {materialBusy ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileUp className="h-4 w-4" />
+                )}
+                {materialBusy ? "Membaca materi dan membuat soal…" : "Buat soal dengan Gemini"}
               </button>
             </div>
           </DialogContent>

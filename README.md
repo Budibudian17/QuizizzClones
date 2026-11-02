@@ -19,6 +19,8 @@ sendiri dulu? Ada juga mode solo dengan statistik untuk akun pemain.
   sebagai guest atau menggunakan akun.
 - **Kuis buatan sendiri atau API:** host dapat menulis soal sendiri atau
   mengambil soal dari Open Trivia Database.
+- **Buat soal dari materi:** unggah PPTX/PDF untuk membuat soal pilihan ganda
+  dengan Gemini, lalu tinjau dan edit dulu sebelum ditambahkan ke kuis.
 - **Permainan real-time:** lobby, soal, timer, skor, dan peringkat tersinkron
   untuk host dan pemain.
 - **Latihan solo:** kerjakan soal OpenTDB dengan pilihan kategori, kesulitan,
@@ -36,12 +38,17 @@ cd <folder-repository>
 npm ci
 ```
 
-Salin `.env.example` menjadi `.env.local`, lalu isi kredensial Supabase:
+Salin `.env.example` menjadi `.env.local`, lalu isi kredensial Supabase dan API
+key Gemini:
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+GEMINI_API_KEY=your-gemini-api-key
 ```
+
+API key Gemini digunakan di server saja—jangan ubah namanya menjadi `VITE_*` atau
+menaruhnya di kode frontend. Buat key melalui [Google AI Studio](https://aistudio.google.com/apikey).
 
 Terapkan konfigurasi Supabase di bawah, lalu jalankan:
 
@@ -75,8 +82,18 @@ akses data; skor pemain lain tidak ditampilkan kepada pemain.
 
 Tambahkan `VITE_SUPABASE_URL` dan `VITE_SUPABASE_PUBLISHABLE_KEY` pada
 **Project Settings → Environment Variables** untuk environment yang digunakan,
-kemudian deploy. Pastikan migration sudah diterapkan dan pengaturan Authentication
-Supabase di atas sudah aktif.
+serta `GEMINI_API_KEY` sebagai environment variable server. Jangan gunakan prefix
+`VITE_` untuk key Gemini. Kemudian deploy. Pastikan migration sudah diterapkan
+dan pengaturan Authentication Supabase di atas sudah aktif.
+
+## Membuat soal dari file
+
+Di editor kuis, pilih **Buat soal dari file**, unggah PPTX atau PDF, pilih jumlah
+soal dan fokus tambahan bila perlu, lalu buat soal. Hanya teks yang diekstrak di
+browser yang dikirim ke Gemini; file maksimal 15 MB, 100 slide/halaman, dan
+50.000 karakter. Gambar, diagram, atau halaman PDF hasil scan tidak dibaca.
+Hasil AI perlu diperiksa karena kunci jawaban bisa saja keliru. Penggunaan Gemini
+tunduk pada kuota dan ketentuan akun Google AI yang digunakan.
 
 ## Soal dan atribusi
 
