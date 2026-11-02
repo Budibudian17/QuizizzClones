@@ -94,10 +94,10 @@ export async function ensureHostRoom(quizId: string): Promise<{ roomId: string; 
 
 export async function joinSupabaseRoom(pin: string, nickname: string): Promise<string> {
   const client = createPlayerClient();
-  const { data: current, error: currentError } = await client.auth.getUser();
+  const { data: current, error: currentError } = await client.auth.getSession();
   if (currentError) throw currentError;
 
-  if (!current.user) {
+  if (!current.session?.user) {
     const { error: signInError } = await client.auth.signInAnonymously();
     if (signInError) throw signInError;
   }
