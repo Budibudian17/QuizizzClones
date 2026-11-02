@@ -41,6 +41,7 @@ type RoomSnapshotPayload = {
     nickname: string;
     score: number;
     last_gain: number;
+    rank?: number;
   }>;
   answers: Array<{
     player_id: string;
@@ -70,6 +71,7 @@ function mapSnapshot(payload: RoomSnapshotPayload): LiveRoom {
         nickname: player.nickname,
         score: player.score,
         lastGain: player.last_gain,
+        ...(player.rank !== undefined && { rank: player.rank }),
       })),
       answers,
       rev: 0,
@@ -116,6 +118,18 @@ export async function getCurrentPlayerId(): Promise<string> {
   if (error) throw error;
   if (!data.user) throw new Error("Sesi pemain tidak ditemukan. Silakan bergabung kembali.");
   return data.user.id;
+}
+
+export async function recordPlayerGameResult(roomId: string): Promise<boolean> {
+  const client = createPlayerClient();
+  const { data, error: sessionError } = await client.auth.getSession();
+  if (sessionError) throw sessionError;
+  const user = data.session?.user;
+  if (!user || user.is_anonymous === true) return false;
+
+  const { error } = await client.rpc("record_player_game_result", { p_room_id: roomId });
+  if (error) throw error;
+  return true;
 }
 
 export async function startSupabaseRoom(roomId: string): Promise<void> {

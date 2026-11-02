@@ -18,7 +18,7 @@ import { AmbientBackground } from "@/components/AmbientBackground";
 import { ThemePicker } from "@/components/ThemePicker";
 import { TimerRing } from "@/components/TimerRing";
 import { ConfettiBurst } from "@/components/Confetti";
-import { FinalStandings, Leaderboard, Podium } from "@/components/Results";
+import { FinalLeaderboard, FinalStandings, Leaderboard, Podium } from "@/components/Results";
 import { getRoom, MIN_PLAYERS_TO_START, rankPlayers } from "@/game/room";
 import {
   endSupabaseRoom,
@@ -192,15 +192,19 @@ function HostPage() {
           ) : room.phase === "reveal" && question ? (
             <HostReveal question={question} room={room} />
           ) : room.phase === "leaderboard" ? (
-            <section className="anim-pop flex w-full max-w-md flex-col items-center text-center">
-              <Crown className="h-8 w-8 text-accent" />
-              <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight">
-                Peringkat
-              </h1>
-              <div className="mt-6">
-                <Leaderboard players={rankPlayers(room)} />
-              </div>
-            </section>
+            room.questionIndex === quiz.questions.length - 1 ? (
+              <FinalLeaderboard players={rankPlayers(room)} />
+            ) : (
+              <section className="anim-pop flex w-full max-w-md flex-col items-center text-center">
+                <Crown className="h-8 w-8 text-accent" />
+                <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight">
+                  Peringkat
+                </h1>
+                <div className="mt-6">
+                  <Leaderboard players={rankPlayers(room)} />
+                </div>
+              </section>
+            )
           ) : (
             <HostPodium
               room={room}
@@ -400,6 +404,19 @@ function HostQuestion({
         <h1 className="mt-5 max-w-2xl font-display text-2xl font-extrabold leading-snug tracking-tight sm:text-3xl">
           {question.text}
         </h1>
+        {question.source === "opentdb" && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Sumber soal:{" "}
+            <a
+              href="https://opentdb.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent underline underline-offset-2"
+            >
+              Open Trivia Database (CC BY-SA 4.0)
+            </a>
+          </p>
+        )}
         <div className="mt-6 grid max-w-2xl gap-2.5 sm:grid-cols-2">
           {question.options.map((option, i) => (
             <div

@@ -6,6 +6,7 @@ import {
   CircleHelp,
   Clock3,
   ClipboardPaste,
+  Globe2,
   Plus,
   Save,
   Trash2,
@@ -21,6 +22,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { parseQuizText } from "@/game/quiz-import";
+import {
+  fetchTriviaQuiz,
+  loadTriviaCategories,
+  type TriviaCategory,
+  type TriviaDifficulty,
+} from "@/game/open-trivia";
 import { getHostUser, getOwnedQuiz, saveOwnedQuiz } from "@/game/supabase-quizzes";
 import { makeId, type Quiz, type QuizQuestion } from "@/game/types";
 
@@ -63,8 +70,36 @@ function EditorPage() {
   const [error, setError] = useState("");
   const [showImport, setShowImport] = useState(false);
   const [showImportGuide, setShowImportGuide] = useState(false);
+  const [showApiImport, setShowApiImport] = useState(false);
+  const [apiCategories, setApiCategories] = useState<TriviaCategory[]>([]);
+  const [apiCategory, setApiCategory] = useState("");
+  const [apiDifficulty, setApiDifficulty] = useState("");
+  const [apiAmount, setApiAmount] = useState("10");
+  const [apiBusy, setApiBusy] = useState(false);
+  const [apiLoadingCategories, setApiLoadingCategories] = useState(false);
+  const [apiError, setApiError] = useState("");
   const [importText, setImportText] = useState("");
   const parsedImport = useMemo(() => parseQuizText(importText), [importText]);
+
+  useEffect(() => {
+    if (!showApiImport || apiCategories.length > 0) return;
+    let active = true;
+    setApiLoadingCategories(true);
+    void loadTriviaCategories()
+      .then((categories) => {
+        if (active) setApiCategories(categories);
+      })
+      .catch((cause: unknown) => {
+        console.error("Failed to load Open Trivia DB categories for quiz editor.", cause);
+        if (active) setApiError("Gagal memuat kategori API. Periksa koneksi lalu coba lagi.");
+      })
+      .finally(() => {
+        if (active) setApiLoadingCategories(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [showApiImport, apiCategories.length]);
 
   useEffect(() => {
     let active = true;
@@ -180,6 +215,40 @@ function EditorPage() {
     setShowImport(false);
   };
 
+  const importApiQuestions = async () => {
+    setApiBusy(true);
+    setApiError("");
+    try {
+      const generatedQuiz = await fetchTriviaQuiz({
+        amount: Number(apiAmount),
+        ...(apiCategory && { categoryId: Number(apiCategory) }),
+        ...(apiDifficulty && { difficulty: apiDifficulty as TriviaDifficulty }),
+      });
+      const descriptionWithoutOldAttribution = quiz.description
+        .trim()
+        .replace(/\n*\s*Soal dari Open Trivia Database \(CC BY-SA 4\.0\).*$/s, "")
+        .trim();
+      setQuiz({
+        ...quiz,
+        title: quiz.title.trim() || generatedQuiz.title,
+        description: [
+          descriptionWithoutOldAttribution,
+          "Soal dari Open Trivia Database (CC BY-SA 4.0): https://opentdb.com/",
+          "Terjemahan otomatis oleh MyMemory: https://mymemory.translated.net/",
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
+        questions: generatedQuiz.questions,
+      });
+      setShowApiImport(false);
+    } catch (cause: unknown) {
+      console.error("Failed to import Open Trivia DB questions into quiz.", cause);
+      setApiError(cause instanceof Error ? cause.message : "Gagal mengambil soal dari API.");
+    } finally {
+      setApiBusy(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen">
       <AmbientBackground />
@@ -247,6 +316,17 @@ function EditorPage() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
+              onClick={() => {
+                setApiError("");
+                setShowApiImport(true);
+              }}
+              className="press-3d inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary"
+            >
+              <Globe2 className="h-4 w-4" />
+              Ambil dari API
+            </button>
+            <button
+              type="button"
               onClick={() => setShowImportGuide((open) => !open)}
               aria-expanded={showImportGuide}
               className="press-3d inline-flex items-center gap-2 rounded-xl border border-input bg-glass px-3 py-2 text-sm font-semibold text-foreground"
@@ -264,7 +344,112 @@ function EditorPage() {
               {showImport ? "Tutup tempel soal" : "Tempel soal dari AI"}
             </button>
           </div>
+          {quiz.translationStatus && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {quiz.translationStatus === "complete"
+                ? "Soal API diterjemahkan otomatis oleh MyMemory."
+                : "Sebagian soal API tidak diterjemahkan karena batas layanan gratis."}
+            </p>
+          )}
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Buat soal sendiri lewat kolom di bawah, atau ambil soal dari API. Soal API akan
+            mengganti daftar soal yang ada dan tetap bisa diedit sebelum multiplayer dimulai.
+          </p>
         </div>
+
+        <Dialog
+          open={showApiImport}
+          onOpenChange={(open) => {
+            setShowApiImport(open);
+            if (!open) setApiError("");
+          }}
+        >
+          <DialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-2xl border-glass-border bg-card p-5 sm:p-6">
+            <DialogHeader className="pr-7">
+              <DialogTitle className="font-display">Pilih soal dari Open Trivia DB</DialogTitle>
+              <DialogDescription>
+                Soal API akan mengganti daftar soal di editor. Setelah diambil, host tetap bisa
+                mengedit pertanyaan dan kunci jawaban.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="text-sm font-semibold">
+                Kategori
+                <select
+                  value={apiCategory}
+                  onChange={(event) => setApiCategory(event.target.value)}
+                  disabled={apiLoadingCategories}
+                  className="mt-2 w-full rounded-xl border border-input bg-background/60 px-3 py-3 text-sm font-normal"
+                >
+                  <option value="">Semua kategori</option>
+                  {apiCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-sm font-semibold">
+                Kesulitan
+                <select
+                  value={apiDifficulty}
+                  onChange={(event) => setApiDifficulty(event.target.value)}
+                  className="mt-2 w-full rounded-xl border border-input bg-background/60 px-3 py-3 text-sm font-normal"
+                >
+                  <option value="">Acak</option>
+                  <option value="easy">Mudah</option>
+                  <option value="medium">Menengah</option>
+                  <option value="hard">Sulit</option>
+                </select>
+              </label>
+              <label className="text-sm font-semibold sm:col-span-2">
+                Jumlah soal
+                <select
+                  value={apiAmount}
+                  onChange={(event) => setApiAmount(event.target.value)}
+                  className="mt-2 w-full rounded-xl border border-input bg-background/60 px-3 py-3 text-sm font-normal"
+                >
+                  {[5, 10, 20, 50].map((amount) => (
+                    <option key={amount} value={amount}>
+                      {amount} soal
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Open Trivia DB umumnya menyediakan soal berbahasa Inggris. Soal dan adaptasinya
+              dilisensikan CC BY-SA 4.0; atribusi akan dicantumkan di deskripsi kuis.
+            </p>
+            {apiError && (
+              <p role="alert" className="text-sm text-destructive">
+                {apiError}
+              </p>
+            )}
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowApiImport(false)}
+                className="rounded-xl border border-input bg-glass px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => void importApiQuestions()}
+                disabled={apiBusy || apiLoadingCategories || apiCategories.length === 0}
+                className="press-3d inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+              >
+                <Globe2 className="h-4 w-4" />
+                {apiLoadingCategories
+                  ? "Memuat kategori…"
+                  : apiBusy
+                    ? "Mengambil soal…"
+                    : "Ganti dengan soal API"}
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={showImportGuide} onOpenChange={setShowImportGuide}>
           <DialogContent className="max-h-[85dvh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-2xl border-glass-border bg-card p-5 sm:p-6">

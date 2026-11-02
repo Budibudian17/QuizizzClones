@@ -194,6 +194,31 @@ describe("game flow", () => {
     expect(ranked[0]!.nickname).toBe("Zed");
     expect(ranked.map((p) => p.nickname).slice(1)).toEqual(["Ana", "Budi", "Mia"]);
   });
+
+  it("preserves server-provided ranks when player scores are private", () => {
+    const quiz = createQuizFixture();
+    const room = createRoom(quiz.id);
+    joinRoom(room.pin, "p1", "First");
+    joinRoom(room.pin, "p2", "Second");
+    joinRoom(room.pin, "p3", "Third");
+    joinRoom(room.pin, "p4", "Fourth");
+    const currentRoom = getRoom()!;
+    const privateRoom = {
+      ...currentRoom,
+      players: currentRoom.players.map((player, index) => ({
+        ...player,
+        score: 0,
+        rank: 4 - index,
+      })),
+    };
+
+    expect(rankPlayers(privateRoom).map((player) => player.nickname)).toEqual([
+      "Fourth",
+      "Third",
+      "Second",
+      "First",
+    ]);
+  });
 });
 
 describe("human-only gameplay", () => {

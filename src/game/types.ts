@@ -4,6 +4,7 @@ export type QuizQuestion = {
   options: string[]; // exactly 4
   correctIndex: number; // 0-3
   timerSec: 10 | 20 | 30;
+  source?: "opentdb";
 };
 
 export type Quiz = {
@@ -12,6 +13,8 @@ export type Quiz = {
   description: string;
   questions: QuizQuestion[];
   updatedAt: number;
+  isPublic?: boolean;
+  translationStatus?: "complete" | "partial";
 };
 
 export type Player = {
@@ -19,6 +22,7 @@ export type Player = {
   nickname: string;
   score: number;
   lastGain: number; // points earned on the current/last question
+  rank?: number;
 };
 
 export type PlayerAnswer = {

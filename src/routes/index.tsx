@@ -1,10 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, Gamepad2, LoaderCircle, LockKeyhole, Pencil, UserPlus } from "lucide-react";
+import {
+  ArrowRight,
+  Gamepad2,
+  LoaderCircle,
+  LockKeyhole,
+  Pencil,
+  UserRound,
+  UserPlus,
+} from "lucide-react";
 
 import { AmbientBackground } from "@/components/AmbientBackground";
 import { ThemePicker } from "@/components/ThemePicker";
-import { createClient } from "@/utils/supabase/client";
+import { createClient, createPlayerClient } from "@/utils/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,6 +35,29 @@ function HomePage() {
   const [authMessage, setAuthMessage] = useState("");
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
+  const [playerAccountEmail, setPlayerAccountEmail] = useState<string | null>(null);
+  const [checkingPlayerAccount, setCheckingPlayerAccount] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const restorePlayerAccount = async () => {
+      try {
+        const { data, error } = await createPlayerClient().auth.getSession();
+        if (error) throw error;
+        const user = data.session?.user;
+        if (active && user && user.is_anonymous !== true)
+          setPlayerAccountEmail(user.email ?? "Akun pemain");
+      } catch (cause: unknown) {
+        console.error("Failed to check player account on home page.", cause);
+      } finally {
+        if (active) setCheckingPlayerAccount(false);
+      }
+    };
+    void restorePlayerAccount();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -122,24 +153,50 @@ function HomePage() {
           Mau bermain atau membuat kuis?
         </h1>
         <p className="mt-3 max-w-lg text-center text-sm leading-relaxed text-muted-foreground">
-          Pilih peranmu untuk melanjutkan. Pemain bergabung dengan PIN, host mengelola kuis dan
-          memulai permainan.
+          Gabung permainan sebagai guest, masuk ke akun pemain, atau kelola kuis sebagai host.
         </p>
 
-        <div className="mt-9 grid w-full max-w-2xl gap-4 sm:grid-cols-2">
+        <div className="mt-9 grid w-full max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Link
             to="/join"
-            className="lift-3d panel anim-pop group flex min-h-56 flex-col items-start rounded-3xl p-6 text-left"
+            search={{ mode: "guest" }}
+            className="lift-3d panel anim-pop flex min-h-56 flex-col items-start rounded-3xl p-6 text-left"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/15 text-accent">
               <Gamepad2 className="h-6 w-6" />
             </span>
-            <h2 className="mt-5 font-display text-xl font-bold tracking-tight">Gabung permainan</h2>
+            <h2 className="mt-5 font-display text-xl font-bold tracking-tight">
+              Gabung sebagai guest
+            </h2>
             <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-              Masukkan Game PIN dari host, lalu jawab soal bersama pemain lain.
+              Masukkan Game PIN dari host. Tidak perlu membuat akun pemain.
             </p>
             <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent">
               Saya pemain
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </span>
+          </Link>
+
+          <Link
+            to="/player-dashboard"
+            className="lift-3d panel anim-pop group flex min-h-56 flex-col items-start rounded-3xl p-6 text-left"
+            style={{ animationDelay: "60ms" }}
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+              <UserRound className="h-6 w-6" />
+            </span>
+            <h2 className="mt-5 font-display text-xl font-bold tracking-tight">
+              {playerAccountEmail ? "Masuk ke akun Anda" : "Dashboard pemain"}
+            </h2>
+            <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+              {checkingPlayerAccount
+                ? "Memeriksa sesi akun…"
+                : playerAccountEmail
+                  ? `Akun ${playerAccountEmail} tersimpan. Lanjut ke dashboard untuk gabung game dan lihat statistik.`
+                  : "Masuk atau daftar akun untuk menggabung game, melihat statistik, dan latihan solo."}
+            </p>
+            <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+              {playerAccountEmail ? "Buka dashboard akun" : "Masuk / daftar"}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </span>
           </Link>

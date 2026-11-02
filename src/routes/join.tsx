@@ -16,12 +16,13 @@ import { AmbientBackground } from "@/components/AmbientBackground";
 import { ThemePicker } from "@/components/ThemePicker";
 import { TimerRing } from "@/components/TimerRing";
 import { ConfettiBurst } from "@/components/Confetti";
-import { FinalStandings, Leaderboard, Podium } from "@/components/Results";
+import { FinalLeaderboard, FinalStandings, Leaderboard, Podium } from "@/components/Results";
 import { clearMe, loadMe, rankPlayers, saveMe, type SavedMe } from "@/game/room";
 import {
   fetchRoomSnapshot,
   getCurrentPlayerId,
   joinSupabaseRoom,
+  recordPlayerGameResult,
   submitSupabaseAnswer,
   useSupabaseRoom,
 } from "@/game/supabase-room";
@@ -29,9 +30,17 @@ import type { PublicQuiz } from "@/game/supabase-room";
 import type { Player, RoomState } from "@/game/types";
 import { formatPoints } from "@/game/scoring";
 import { cn } from "@/lib/utils";
+import { createPlayerClient } from "@/utils/supabase/client";
 
 export const Route = createFileRoute("/join")({
   ssr: false,
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { mode?: "guest"; from?: "player-dashboard" } => {
+    const mode = search["mode"] === "guest" ? "guest" : undefined;
+    const from = search["from"] === "player-dashboard" ? "player-dashboard" : undefined;
+    return { ...(mode && { mode }), ...(from && { from }) };
+  },
   head: () => ({
     meta: [
       { title: "Gabung Permainan — KampusQuiz" },
@@ -58,6 +67,7 @@ const ERROR_TEXT: Record<string, string> = {
 };
 
 function JoinPage() {
+  const { mode, from } = Route.useSearch();
   const [session, setSession] = useState<SavedMe | null>(null);
   const [restored, setRestored] = useState(false);
   const [restoreError, setRestoreError] = useState("");
@@ -69,6 +79,10 @@ function JoinPage() {
     let active = true;
     const restore = async () => {
       try {
+        if (mode === "guest") {
+          clearMe();
+          return;
+        }
         const me = loadMe();
         if (!me?.roomId) {
           clearMe();
@@ -101,7 +115,7 @@ function JoinPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [mode]);
 
   const quiz = liveRoom?.quiz ?? null;
 
@@ -119,7 +133,12 @@ function JoinPage() {
       </div>
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col items-center justify-center px-5 py-10">
         {!active || !me ? (
-          <JoinForm restoreError={restoreError} onJoined={setSession} />
+          <JoinForm
+            restoreError={restoreError}
+            onJoined={setSession}
+            forceGuest={mode === "guest"}
+            returnToDashboard={from === "player-dashboard"}
+          />
         ) : roomError ? (
           <p
             role="alert"
@@ -139,6 +158,7 @@ function JoinPage() {
             quiz={quiz}
             me={me}
             playerId={activeSession?.playerId ?? ""}
+            returnToDashboard={from === "player-dashboard"}
           />
         )}
       </main>
@@ -151,14 +171,67 @@ function JoinPage() {
 function JoinForm({
   restoreError,
   onJoined,
+  forceGuest,
+  returnToDashboard,
 }: {
   restoreError: string;
   onJoined: (me: SavedMe) => void;
+  forceGuest: boolean;
+  returnToDashboard: boolean;
 }) {
   const [pin, setPin] = useState("");
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [guestBusy, setGuestBusy] = useState(false);
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const [accountChecked, setAccountChecked] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const restorePlayerAccount = async () => {
+      try {
+        const { data, error: sessionError } = await createPlayerClient().auth.getSession();
+        if (sessionError) throw sessionError;
+        const user = data.session?.user;
+        if (user && user.is_anonymous !== true) {
+          if (forceGuest) {
+            const { error: signOutError } = await createPlayerClient().auth.signOut();
+            if (signOutError) throw signOutError;
+          } else if (active) {
+            setAccountEmail(user.email ?? "Akun pemain");
+          }
+        }
+      } catch (cause: unknown) {
+        console.error("Failed to check player account before joining.", cause);
+        if (active) setError("Sesi akun tidak dapat diperiksa. Coba muat ulang halaman.");
+      } finally {
+        if (active) setAccountChecked(true);
+      }
+    };
+    void restorePlayerAccount();
+    return () => {
+      active = false;
+    };
+  }, [forceGuest]);
+
+  const switchToGuestAccount = async () => {
+    setGuestBusy(true);
+    try {
+      const client = createPlayerClient();
+      const { data, error: sessionError } = await client.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (data.session?.user.is_anonymous !== true && data.session?.user) {
+        const { error: signOutError } = await client.auth.signOut();
+        if (signOutError) throw signOutError;
+      }
+    } catch (cause) {
+      console.error("Failed to switch player to guest mode.", cause);
+      setError("Gagal beralih ke guest. Coba lagi.");
+    } finally {
+      setGuestBusy(false);
+    }
+  };
 
   const submit = async () => {
     const cleanPin = pin.replace(/\D/g, "").slice(0, 6);
@@ -214,19 +287,56 @@ function JoinForm({
   return (
     <section className="panel anim-pop w-full max-w-sm rounded-3xl p-8 text-center">
       <div className="mb-5 flex justify-start">
-        <Link
-          to="/"
-          className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Kembali
-        </Link>
+        {returnToDashboard || accountEmail ? (
+          <Link
+            to="/player-dashboard"
+            className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Dashboard pemain
+          </Link>
+        ) : (
+          <Link
+            to="/"
+            className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Kembali
+          </Link>
+        )}
       </div>
       <h1 className="font-display text-2xl font-extrabold tracking-tight">Gabung Permainan</h1>
       <p className="mt-1.5 text-sm text-muted-foreground">
         Masukkan 6-digit Game PIN dari layar host
       </p>
       {restoreError && <p className="mt-3 text-xs text-muted-foreground">{restoreError}</p>}
+
+      {!accountChecked ? (
+        <p role="status" className="mt-5 text-xs text-muted-foreground">
+          Memeriksa sesi akun…
+        </p>
+      ) : accountEmail ? (
+        <p className="mt-4 text-xs text-muted-foreground">
+          Bergabung sebagai <span className="font-medium text-foreground">{accountEmail}</span>
+        </p>
+      ) : !forceGuest ? (
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => void switchToGuestAccount()}
+            disabled={guestBusy}
+            className="rounded-xl border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
+          >
+            {guestBusy ? "Menyiapkan guest…" : "Lanjut sebagai guest"}
+          </button>
+          <Link
+            to="/player-dashboard"
+            className="rounded-xl border border-glass-border bg-glass px-3 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-primary/40"
+          >
+            Masuk akun pemain
+          </Link>
+        </div>
+      ) : null}
 
       <input
         value={pin}
@@ -262,7 +372,7 @@ function JoinForm({
 
       <button
         onClick={submit}
-        disabled={busy}
+        disabled={busy || guestBusy || !accountChecked}
         className="press-3d mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 font-display text-base font-bold tracking-tight text-primary-foreground disabled:opacity-50"
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
@@ -280,12 +390,14 @@ function PlayerStage({
   quiz,
   me,
   playerId,
+  returnToDashboard,
 }: {
   room: RoomState;
   roomId: string;
   quiz: PublicQuiz;
   me: Player;
   playerId: string;
+  returnToDashboard: boolean;
 }) {
   const [pendingChoice, setPendingChoice] = useState<number | null>(null);
   const [answerError, setAnswerError] = useState("");
@@ -326,23 +438,39 @@ function PlayerStage({
     );
   } else if (room.phase === "reveal" && question) {
     stage = (
-      <PlayerReveal question={question} myChoice={myAnswer?.choice ?? null} gain={me.lastGain} />
+      <PlayerReveal
+        question={question}
+        myChoice={myAnswer?.choice ?? null}
+        gain={me.lastGain}
+        score={me.score}
+      />
     );
   } else if (room.phase === "leaderboard") {
-    stage = (
-      <section className="anim-pop flex w-full flex-col items-center text-center">
-        <Crown className="h-7 w-7 text-accent" />
-        <h1 className="mt-3 font-display text-2xl font-extrabold tracking-tight">Peringkat</h1>
-        <p className="numeral mt-1 text-sm text-muted-foreground">
-          Peringkatmu: {rank > 0 ? rank : "-"} · {formatPoints(me.score)} poin
-        </p>
-        <div className="mt-5 w-full max-w-sm">
-          <Leaderboard players={rankPlayers(room)} meId={playerId} compact />
-        </div>
-      </section>
-    );
+    stage =
+      room.questionIndex === quiz.questions.length - 1 ? (
+        <FinalLeaderboard players={rankPlayers(room)} meId={playerId} hideOtherScores />
+      ) : (
+        <section className="anim-pop flex w-full flex-col items-center text-center">
+          <Crown className="h-7 w-7 text-accent" />
+          <h1 className="mt-3 font-display text-2xl font-extrabold tracking-tight">Peringkat</h1>
+          <p className="numeral mt-1 text-sm text-muted-foreground">
+            Peringkatmu: {rank > 0 ? rank : "-"} · {formatPoints(me.score)} poin
+          </p>
+          <div className="mt-5 w-full max-w-sm">
+            <Leaderboard players={rankPlayers(room)} meId={playerId} compact hideOtherScores />
+          </div>
+        </section>
+      );
   } else {
-    stage = <PlayerPodium room={room} rank={rank} meId={playerId} />;
+    stage = (
+      <PlayerPodium
+        room={room}
+        roomId={roomId}
+        rank={rank}
+        meId={playerId}
+        returnToDashboard={returnToDashboard}
+      />
+    );
   }
 
   return stage;
@@ -436,6 +564,19 @@ function PlayerQuestion({
       <h1 className="anim-pop mt-5 font-display text-xl font-extrabold leading-snug tracking-tight sm:text-2xl">
         {question.text}
       </h1>
+      {question.source === "opentdb" && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Sumber soal:{" "}
+          <a
+            href="https://opentdb.com/"
+            target="_blank"
+            rel="noreferrer"
+            className="text-accent underline underline-offset-2"
+          >
+            Open Trivia Database (CC BY-SA 4.0)
+          </a>
+        </p>
+      )}
       {error && (
         <p role="alert" className="mt-3 text-xs text-destructive">
           {error}
@@ -471,10 +612,12 @@ function PlayerReveal({
   question,
   myChoice,
   gain,
+  score,
 }: {
   question: PublicQuiz["questions"][number];
   myChoice: number | null;
   gain: number;
+  score: number;
 }) {
   const correct = myChoice !== null && myChoice === question.correctIndex;
 
@@ -507,27 +650,62 @@ function PlayerReveal({
           +{formatPoints(gain)}
         </p>
       )}
-      {!correct && question.correctIndex !== undefined && (
-        <p className="mt-2 text-sm text-muted-foreground">
-          Jawaban benar:{" "}
-          <span className="font-semibold text-accent">
-            {LETTERS[question.correctIndex]}. {question.options[question.correctIndex]}
-          </span>
-        </p>
+      {question.correctIndex !== undefined && (
+        <div className="mt-5 grid w-full max-w-lg gap-2 text-left sm:grid-cols-2">
+          {question.options.map((option, index) => {
+            const isCorrect = index === question.correctIndex;
+            const isMyWrongAnswer = index === myChoice && !isCorrect;
+            return (
+              <div
+                key={index}
+                className={cn(
+                  "rounded-xl border px-3 py-2.5 text-sm",
+                  isCorrect
+                    ? "border-success/50 bg-success/10"
+                    : isMyWrongAnswer
+                      ? "border-destructive/50 bg-destructive/10"
+                      : "border-glass-border bg-glass",
+                )}
+              >
+                <span className="font-semibold">
+                  {LETTERS[index]}. {option}
+                </span>
+                {isCorrect && <span className="ml-2 text-xs text-success">Benar</span>}
+                {isMyWrongAnswer && (
+                  <span className="ml-2 text-xs text-destructive">Jawabanmu</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
-      {myChoice !== null && !correct && (
-        <p className="mt-1 text-xs text-muted-foreground">
-          Jawabanmu: {LETTERS[myChoice]}. {question.options[myChoice]}
-        </p>
-      )}
+      <p className="numeral mt-4 text-sm text-muted-foreground">
+        Skor total: {formatPoints(score)} poin
+        <span className="ml-2 font-sans text-success">(+{formatPoints(gain)})</span>
+      </p>
     </section>
   );
 }
 
-function PlayerPodium({ room, rank, meId }: { room: RoomState; rank: number; meId: string }) {
+function PlayerPodium({
+  room,
+  roomId,
+  rank,
+  meId,
+  returnToDashboard,
+}: {
+  room: RoomState;
+  roomId: string;
+  rank: number;
+  meId: string;
+  returnToDashboard: boolean;
+}) {
   const navigate = useNavigate();
   const [canReturnHome, setCanReturnHome] = useState(false);
   const [showStandings, setShowStandings] = useState(false);
+  const [statsSaved, setStatsSaved] = useState(false);
+  const [statsError, setStatsError] = useState("");
+  const [isGuest, setIsGuest] = useState<boolean | null>(null);
 
   useEffect(() => {
     const standingsTimeout = window.setTimeout(() => setShowStandings(true), 3000);
@@ -538,11 +716,29 @@ function PlayerPodium({ room, rank, meId }: { room: RoomState; rank: number; meI
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    void recordPlayerGameResult(roomId)
+      .then((saved) => {
+        if (active) {
+          setStatsSaved(saved);
+          setIsGuest(!saved);
+        }
+      })
+      .catch((cause: unknown) => {
+        console.error("Failed to save player game statistics.", cause);
+        if (active) setStatsError("Statistik akun gagal disimpan. Coba muat ulang halaman ini.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [roomId]);
+
   return (
     <section className="flex w-full flex-col items-center text-center">
       <ConfettiBurst burst={rank <= 3 ? 1 : 0} key={`podium-${room.pin}`} />
       <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
-        Permainan Selesai
+        {rank === 1 ? "Kemenangan luar biasa!" : "Permainan Selesai"}
       </h1>
       <p className="numeral mt-2 text-lg text-muted-foreground">
         {rank === 1 ? (
@@ -555,21 +751,52 @@ function PlayerPodium({ room, rank, meId }: { room: RoomState; rank: number; meI
         )}
       </p>
       <div className="mt-10 w-full">
-        <Podium players={rankPlayers(room)} />
+        <Podium players={rankPlayers(room)} meId={meId} hideOtherScores />
       </div>
       {showStandings && (
-        <FinalStandings players={rankPlayers(room)} meId={meId} className="mt-10" />
+        <FinalStandings players={rankPlayers(room)} meId={meId} className="mt-10" hideOtherScores />
+      )}
+      {statsError && (
+        <p role="alert" className="mt-5 text-xs text-destructive">
+          {statsError}
+        </p>
+      )}
+      {statsSaved && (
+        <Link
+          to="/stats"
+          className="press-3d mt-6 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary"
+        >
+          Lihat statistik akun
+        </Link>
+      )}
+      {isGuest === true && (
+        <div className="mt-6 max-w-sm rounded-2xl border border-primary/30 bg-primary/10 p-4">
+          <p className="font-display text-sm font-bold">Ingin menyimpan statistikmu?</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Buat akun pemain untuk menyimpan winrate, podium, akurasi, dan riwayat permainan.
+          </p>
+          <Link
+            to="/player-dashboard"
+            className="press-3d mt-3 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+          >
+            Buat akun pemain
+          </Link>
+        </div>
       )}
       {canReturnHome ? (
         <button
           onClick={() => {
             clearMe();
-            navigate({ to: "/" });
+            navigate({
+              to: returnToDashboard || isGuest === false ? "/player-dashboard" : "/",
+            });
           }}
           className="press-3d mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground anim-pop"
         >
           <Home className="h-4 w-4" />
-          Kembali ke menu utama
+          {returnToDashboard || isGuest === false
+            ? "Kembali ke dashboard pemain"
+            : "Kembali ke menu utama"}
         </button>
       ) : (
         <p className="mt-8 text-xs text-muted-foreground">

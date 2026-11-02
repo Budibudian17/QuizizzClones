@@ -134,6 +134,11 @@ function Dashboard() {
                     <span className="rounded-full border border-glass-border bg-glass px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                       {quiz.questions.length} soal
                     </span>
+                    {quiz.isPublic && (
+                      <span className="ml-1 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-accent">
+                        Tayang di latihan solo
+                      </span>
+                    )}
                     <h3 className="mt-3 font-display text-xl font-bold tracking-tight">
                       {quiz.title}
                     </h3>

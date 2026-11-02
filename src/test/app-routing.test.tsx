@@ -20,5 +20,7 @@ describe("App routing", () => {
 
     expect(router.matchRoutes("/join").at(-1)?.routeId).toBe("/join");
     expect(router.matchRoutes("/dashboard").at(-1)?.routeId).toBe("/dashboard");
+    expect(router.matchRoutes("/player-dashboard").at(-1)?.routeId).toBe("/player-dashboard");
+    expect(router.matchRoutes("/practice").at(-1)?.routeId).toBe("/practice");
   });
 });

@@ -68,9 +68,12 @@ theme is saved in browser localStorage and applies across the app on that browse
 
 Before running the app:
 
-1. Apply `supabase/migrations/20261101000000_kampusquiz_backend.sql` to the project.
+1. Apply the SQL migrations in `supabase/migrations/` in filename order, including
+   `20261102191500_public_practice_quizzes.sql` and
+   `20261102192000_practice_requires_account.sql` and
+   `20261103021700_solo_practice_stats.sql`.
 2. Enable **Anonymous Sign-Ins** in Supabase Authentication settings for players.
-3. Ensure the Email provider is enabled for host accounts.
+3. Ensure the Email provider is enabled for host and player accounts.
 4. Restart the Vite dev server after changing `.env.local`.
 
 For Vercel deployments, add `VITE_SUPABASE_URL` and
@@ -79,6 +82,35 @@ for each environment you deploy (Production, Preview, and/or Development), then
 redeploy so Vite can include them in the client build. Also apply the database
 migration above and enable **Anonymous Sign-Ins** in the same Supabase project;
 players need anonymous auth before they can join with a PIN.
+For player account email confirmation, add the deployed `/player-dashboard` and
+`/practice` URLs (and their local development URLs if needed) to
+**Authentication → URL Configuration → Redirect URLs**.
+
+The `20261102180000_player_accounts_stats.sql` migration keeps opponent score
+totals private from players and adds account-only, completed-game statistics.
+Guests can still join and play but do not get persistent cross-game stats.
+
+Players choose **Akun & statistik** on `/join` to open their dedicated player
+dashboard, where they can join a game, view statistics, or open **Latihan solo**.
+They must sign in with a permanent player account. Solo practice retrieves
+multiple-choice questions from the Open Trivia Database (OpenTDB), with
+category, difficulty, and question-count options. OpenTDB questions are
+generally in English and are licensed under CC BY-SA 4.0; the practice screen
+provides source attribution. Players can choose English or Indonesian for API
+questions. Indonesian uses the public MyMemory translation API; its anonymous
+service has a daily character limit, so untranslated text falls back to the
+original language. No API key is required.
+
+Completed solo practice results are saved separately from multiplayer results
+for signed-in player accounts. The statistics screen keeps solo accuracy
+separate from multiplayer win rate; solo sessions do not count as multiplayer
+wins or affect multiplayer win rate.
+
+For multiplayer games, hosts can write questions in the editor or replace the
+quiz question list with questions fetched from OpenTDB. API questions remain
+editable before saving and launching the game. The editor and multiplayer
+question screens attribute OpenTDB, whose question data is licensed under
+CC BY-SA 4.0.
 
 The migration adds Row Level Security and RPCs for joining rooms, starting games,
 submitting answers, scoring, and advancing phases. Correct answers are withheld
@@ -112,5 +144,9 @@ npm run dev
 3. Mulai permainan dari tab host. Setelah menjawab, pemain masuk ke layar timer saja; ronde berlanjut saat semua pemain menjawab atau waktu habis.
 
 PIN dapat disalin dari lobby host. Pada layar soal, host dapat memantau pemain yang sudah menjawab dan yang masih menunggu. Sesi pemain disimpan di Supabase Auth agar bisa dipulihkan setelah refresh.
+
+Untuk berlatih sendiri, pilih **Latihan solo** dari beranda, masuk dengan akun pemain,
+pilih kuis publik, lalu pilih batas waktu keseluruhan (default 2 menit, bisa dipilih
+1, 2, 3, atau 5 menit). Tidak perlu masuk sebagai host atau memakai PIN.
 
 # QuizizzClones

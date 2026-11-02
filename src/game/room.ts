@@ -303,5 +303,10 @@ function withPhase(s: RoomState, phase: GamePhase, durationMs: number, now: numb
 
 export function rankPlayers(s: RoomState | null): RoomState["players"] {
   if (!s) return [];
+  if (s.players.every((player) => player.rank !== undefined)) {
+    return [...s.players].sort(
+      (a, b) => (a.rank ?? Number.MAX_SAFE_INTEGER) - (b.rank ?? Number.MAX_SAFE_INTEGER),
+    );
+  }
   return [...s.players].sort((a, b) => b.score - a.score || a.nickname.localeCompare(b.nickname));
 }
