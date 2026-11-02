@@ -237,7 +237,15 @@ function Dashboard() {
         </main>
 
         <footer className="pt-10 text-center text-xs text-muted-foreground">
-          KampusQuiz · kuis dan permainan tersimpan di Supabase
+          Quizverse · Kuis dan Permainan Multiplayer Real-Time ·{" "}
+          <a
+            href="https://quizzizclones.vercel.app/"
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary hover:underline"
+          >
+            https://quizzizclones.vercel.app/
+          </a>
         </footer>
       </div>
     </div>
