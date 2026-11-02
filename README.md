@@ -48,8 +48,6 @@ IMPLEMENTATION DETAIL:
 The multiplayer flow uses Supabase Auth, Postgres RPCs, Row Level Security, and
 Supabase Realtime so hosts and players can join from separate devices.
 
-This project was built with [Lovable](https://lovable.dev).
-
 ## Supabase setup
 
 Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local` for
@@ -65,6 +63,15 @@ Supabase, with room updates delivered through Supabase Realtime.
 
 The theme picker offers Emas, Samudra, and Hutan color palettes. The selected
 theme is saved in browser localStorage and applies across the app on that browser.
+Ambient backgrounds retrieve public university logo images at runtime; image
+assets are not stored in this repository. UI, ITB, UGM, and ITS thumbnails come
+from their Indonesian Wikipedia articles ([UI](https://id.wikipedia.org/wiki/Universitas_Indonesia),
+[ITB](https://id.wikipedia.org/wiki/Institut_Teknologi_Bandung),
+[UGM](https://id.wikipedia.org/wiki/Universitas_Gadjah_Mada), and
+[ITS](https://id.wikipedia.org/wiki/Institut_Teknologi_Sepuluh_Nopember)). IPB's
+transparent seal comes from the [official IPB website](https://www.ipb.ac.id/wp-content/uploads/2023/03/cropped-logo_ipb_80-192x192.png).
+Logos are displayed for decoration only. Their respective owners retain trademark
+and image rights.
 
 Before running the app:
 
@@ -118,14 +125,6 @@ from players until their question is revealed. The dashboard loads quizzes only
 from the signed-in host's database records. New accounts start with an empty quiz
 list; no sample quizzes or localStorage quiz data are seeded into the database.
 
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/8e83ac3b-1df3-4039-bf6c-7df64c4c25ec).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
 ## Development
 
 Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
@@ -148,5 +147,9 @@ PIN dapat disalin dari lobby host. Pada layar soal, host dapat memantau pemain y
 Untuk berlatih sendiri, pilih **Latihan solo** dari beranda, masuk dengan akun pemain,
 pilih kuis publik, lalu pilih batas waktu keseluruhan (default 2 menit, bisa dipilih
 1, 2, 3, atau 5 menit). Tidak perlu masuk sebagai host atau memakai PIN.
+
+## Credits
+
+Made by Himi.
 
 # QuizizzClones

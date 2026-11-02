@@ -1,16 +1,24 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
-/** Campus logos drift subtly with cursor movement, eased with rAF. */
-const LOGOS = [
-  { src: "/img/ui.webp", top: "12%", left: "7%", size: 112, depth: 0.5, tilt: -6, delay: 0 },
-  { src: "/img/nf.webp", top: "62%", left: "4%", size: 104, depth: 0.9, tilt: 10, delay: 1.6 },
-  { src: "/img/itb.webp", top: "15%", left: "82%", size: 126, depth: 0.65, tilt: 7, delay: 0.8 },
-  { src: "/img/binus.webp", top: "72%", left: "78%", size: 120, depth: 1.1, tilt: -12, delay: 2.4 },
-  { src: "/img/ipb.webp", top: "42%", left: "88%", size: 84, depth: 0.35, tilt: 4, delay: 3.1 },
-];
+import { loadUniversityLogos, type UniversityLogoPlacement } from "@/game/university-logos";
 
 export function AmbientBackground() {
   const ref = useRef<HTMLDivElement>(null);
+  const [logos, setLogos] = useState<UniversityLogoPlacement[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    void loadUniversityLogos()
+      .then((loadedLogos) => {
+        if (active) setLogos(loadedLogos);
+      })
+      .catch((cause: unknown) => {
+        console.error("Failed to load university logos from Wikipedia.", cause);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const el = ref.current;
@@ -41,9 +49,9 @@ export function AmbientBackground() {
 
   return (
     <div ref={ref} className="ambient" aria-hidden>
-      {LOGOS.map((c, i) => (
+      {logos.map((c) => (
         <div
-          key={i}
+          key={c.key}
           className="ambient-logo anim-float"
           style={
             {
@@ -56,7 +64,13 @@ export function AmbientBackground() {
             } as React.CSSProperties
           }
         >
-          <img src={c.src} alt="" draggable={false} />
+          <img
+            src={c.source}
+            alt=""
+            draggable={false}
+            loading="lazy"
+            onError={() => setLogos((current) => current.filter((logo) => logo.key !== c.key))}
+          />
         </div>
       ))}
     </div>
