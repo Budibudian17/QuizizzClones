@@ -12,7 +12,7 @@ import { PHASE_DWELL_MS, type GamePhase, type Quiz, type RoomState } from "./typ
 const ROOM_KEY = "kampusquiz.room";
 const ME_KEY = "kampusquiz.me";
 const CHANNEL_NAME = "kampusquiz-room";
-export const MIN_PLAYERS_TO_START = 4;
+export const MIN_PLAYERS_TO_START = 2;
 
 let channel: BroadcastChannel | null = null;
 let state: RoomState | null = null;

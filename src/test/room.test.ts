@@ -57,19 +57,18 @@ describe("room lifecycle", () => {
     expect(getRoom()!.players.map((p) => p.nickname)).toEqual(["Budi", "Sari"]);
   });
 
-  it("requires at least four joined players before starting", () => {
+  it("requires at least two joined players before starting", () => {
     const quiz = createQuizFixture();
     const { pin } = createRoom(quiz.id);
-    for (let index = 0; index < MIN_PLAYERS_TO_START - 1; index++) {
-      joinRoom(pin, `p${index}`, `Pemain ${index}`);
-    }
+    joinRoom(pin, "p1", "Pemain 1");
 
     startGame(quiz);
     expect(getRoom()!.phase).toBe("lobby");
 
-    joinRoom(pin, "p4", "Pemain 4");
+    joinRoom(pin, "p2", "Pemain 2");
     startGame(quiz);
     expect(getRoom()!.phase).toBe("question");
+    expect(getRoom()!.players).toHaveLength(2);
   });
 
   it("persists the active room and player identity for refresh recovery", () => {

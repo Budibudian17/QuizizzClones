@@ -1,3 +1,5 @@
+import type { AvatarConfig } from "./player-avatar";
+
 export type QuizQuestion = {
   id: string;
   text: string;
@@ -20,6 +22,7 @@ export type Quiz = {
 export type Player = {
   id: string;
   nickname: string;
+  avatar?: AvatarConfig;
   score: number;
   lastGain: number; // points earned on the current/last question
   rank?: number;

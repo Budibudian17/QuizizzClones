@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { AmbientBackground } from "@/components/AmbientBackground";
+import { AvatarCustomizer, PlayerAvatar } from "@/components/PlayerAvatar";
 import { ThemePicker } from "@/components/ThemePicker";
 import { TimerRing } from "@/components/TimerRing";
 import { ConfettiBurst } from "@/components/Confetti";
@@ -24,10 +25,12 @@ import {
   joinSupabaseRoom,
   recordPlayerGameResult,
   submitSupabaseAnswer,
+  updateCurrentPlayerAvatar,
   useSupabaseRoom,
 } from "@/game/supabase-room";
 import type { PublicQuiz } from "@/game/supabase-room";
 import type { Player, RoomState } from "@/game/types";
+import { normalizeAvatar, type AvatarConfig } from "@/game/player-avatar";
 import { formatPoints } from "@/game/scoring";
 import { cn } from "@/lib/utils";
 import { createPlayerClient } from "@/utils/supabase/client";
@@ -425,7 +428,7 @@ function PlayerStage({
 
   let stage = null;
   if (room.phase === "lobby") {
-    stage = <PlayerLobby room={room} me={me} />;
+    stage = <PlayerLobby room={room} roomId={roomId} me={me} />;
   } else if (room.phase === "question" && question) {
     stage = (
       <PlayerQuestion
@@ -476,18 +479,73 @@ function PlayerStage({
   return stage;
 }
 
-function PlayerLobby({ room, me }: { room: RoomState; me: RoomState["players"][number] }) {
+function PlayerLobby({
+  room,
+  roomId,
+  me,
+}: {
+  room: RoomState;
+  roomId: string;
+  me: RoomState["players"][number];
+}) {
+  const [avatar, setAvatar] = useState<AvatarConfig>(() => normalizeAvatar(me.avatar));
+  const [savingAvatar, setSavingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+  const [customizingAvatar, setCustomizingAvatar] = useState(false);
+
+  const saveAvatar = async () => {
+    setSavingAvatar(true);
+    setAvatarError("");
+    try {
+      await updateCurrentPlayerAvatar(roomId, avatar);
+      setCustomizingAvatar(false);
+    } catch (cause: unknown) {
+      console.error("Failed to save player avatar.", cause);
+      setAvatarError("Avatar gagal disimpan. Coba lagi sebelum host memulai permainan.");
+    } finally {
+      setSavingAvatar(false);
+    }
+  };
+
+  if (customizingAvatar) {
+    return (
+      <AvatarCustomizer
+        value={avatar}
+        nickname={me.nickname}
+        onChange={setAvatar}
+        onSave={() => void saveAvatar()}
+        onCancel={() => {
+          setAvatar(normalizeAvatar(me.avatar));
+          setAvatarError("");
+          setCustomizingAvatar(false);
+        }}
+        saving={savingAvatar}
+        error={avatarError}
+      />
+    );
+  }
+
   return (
     <section className="flex w-full flex-col items-center text-center">
       <div className="lift-3d panel anim-pop flex items-center gap-3 rounded-2xl px-6 py-4">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20">
-          <User className="h-4.5 w-4.5 text-primary" />
-        </span>
+        <PlayerAvatar avatar={avatar} className="h-16 w-[2.67rem]" />
         <div className="text-left">
           <p className="font-display text-base font-bold tracking-tight">{me.nickname}</p>
           <p className="text-xs text-muted-foreground">Kamu sudah bergabung</p>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => {
+          setAvatar(normalizeAvatar(me.avatar));
+          setAvatarError("");
+          setCustomizingAvatar(true);
+        }}
+        className="press-3d mt-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary"
+      >
+        Edit avatar
+      </button>
 
       <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
         <span className="relative flex h-2 w-2">
@@ -503,20 +561,23 @@ function PlayerLobby({ room, me }: { room: RoomState; me: RoomState["players"][n
         lobby
       </div>
 
-      <div className="mt-6 flex max-w-md flex-wrap justify-center gap-2">
+      <div className="mt-6 grid w-full max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
         {room.players.map((p, i) => (
           <div
             key={p.id}
             className={cn(
-              "lift-3d glass anim-pop flex items-center gap-2 rounded-2xl px-4 py-2.5",
+              "lift-3d glass anim-pop flex flex-col items-center rounded-2xl px-3 py-3",
               p.id === me.id && "border-primary/50 bg-primary/10",
             )}
             style={{ animationDelay: `${i * 80}ms` }}
           >
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/20">
-              <User className="h-3.5 w-3.5 text-primary" />
+            <PlayerAvatar avatar={normalizeAvatar(p.avatar)} className="h-28 w-[4.65rem]" />
+            <span className="mt-2 max-w-full truncate font-display text-sm font-semibold tracking-tight">
+              {p.nickname}
             </span>
-            <span className="font-display text-sm font-semibold tracking-tight">{p.nickname}</span>
+            {p.id === me.id && (
+              <span className="mt-0.5 text-[0.65rem] font-medium text-primary">Kamu</span>
+            )}
           </div>
         ))}
       </div>
@@ -751,10 +812,10 @@ function PlayerPodium({
         )}
       </p>
       <div className="mt-10 w-full">
-        <Podium players={rankPlayers(room)} meId={meId} hideOtherScores />
+        <Podium players={rankPlayers(room)} meId={meId} />
       </div>
       {showStandings && (
-        <FinalStandings players={rankPlayers(room)} meId={meId} className="mt-10" hideOtherScores />
+        <FinalStandings players={rankPlayers(room)} meId={meId} className="mt-10" />
       )}
       {statsError && (
         <p role="alert" className="mt-5 text-xs text-destructive">

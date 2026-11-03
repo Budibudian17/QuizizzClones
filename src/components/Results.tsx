@@ -4,6 +4,8 @@ import { Crown, Medal, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPlayersBelowPodium } from "@/game/results";
 import { formatPoints } from "@/game/scoring";
+import { normalizeAvatar } from "@/game/player-avatar";
+import { PlayerAvatar } from "@/components/PlayerAvatar";
 import type { Player } from "@/game/types";
 
 /** Top-5 ranking shown between questions. */
@@ -34,6 +36,7 @@ export function Leaderboard({
           style={{ animationDelay: `${i * 80}ms` }}
         >
           <span className="numeral w-7 text-center text-lg text-muted-foreground">{i + 1}</span>
+          <PlayerAvatar avatar={normalizeAvatar(p.avatar)} className="h-14 w-9" />
           <div className="min-w-0 flex-1">
             <p className="truncate font-display text-sm font-semibold tracking-tight">
               {p.nickname}
@@ -42,9 +45,16 @@ export function Leaderboard({
               <p className="text-xs font-medium text-success">+{formatPoints(p.lastGain)}</p>
             )}
           </div>
-          {(!hideOtherScores || p.id === meId) && (
-            <span className="numeral text-lg">{formatPoints(p.score)}</span>
-          )}
+          <span
+            className="numeral text-lg"
+            aria-label={
+              hideOtherScores && p.id !== meId
+                ? "Skor disembunyikan"
+                : `${formatPoints(p.score)} poin`
+            }
+          >
+            {hideOtherScores && p.id !== meId ? "?" : formatPoints(p.score)}
+          </span>
         </div>
       ))}
     </div>
@@ -86,12 +96,20 @@ export function FinalStandings({
             <span className="numeral w-7 text-center text-lg text-muted-foreground">
               {index + 4}
             </span>
+            <PlayerAvatar avatar={normalizeAvatar(player.avatar)} className="h-14 w-9" />
             <span className="min-w-0 flex-1 truncate font-display text-sm font-semibold tracking-tight">
               {player.nickname}
             </span>
-            {(!hideOtherScores || player.id === meId) && (
-              <span className="numeral text-lg">{formatPoints(player.score)}</span>
-            )}
+            <span
+              className="numeral text-lg"
+              aria-label={
+                hideOtherScores && player.id !== meId
+                  ? "Skor disembunyikan"
+                  : `${formatPoints(player.score)} poin`
+              }
+            >
+              {hideOtherScores && player.id !== meId ? "?" : formatPoints(player.score)}
+            </span>
           </div>
         ))}
       </div>
@@ -170,11 +188,25 @@ export function Podium({
   const second = players[1];
   const third = players[2];
 
-  const columns = [
-    { player: second, rank: 2, height: "h-32", delay: 0.7 },
-    { player: first, rank: 1, height: "h-48", delay: 1.4 },
-    { player: third, rank: 3, height: "h-24", delay: 0 },
-  ];
+  const columns =
+    players.length === 1
+      ? [{ player: first, rank: 1, height: "h-40", delay: 0.7 }]
+      : players.length === 2
+        ? [
+            { player: second, rank: 2, height: "h-32", delay: 0.7 },
+            { player: first, rank: 1, height: "h-48", delay: 1.4 },
+          ]
+        : [
+            { player: second, rank: 2, height: "h-32", delay: 0.7 },
+            { player: first, rank: 1, height: "h-48", delay: 1.4 },
+            { player: third, rank: 3, height: "h-24", delay: 0 },
+          ];
+  const gridClass =
+    players.length === 1
+      ? "grid-cols-1 max-w-xs"
+      : players.length === 2
+        ? "grid-cols-2 max-w-md"
+        : "grid-cols-3";
 
   return (
     <div className="relative mx-auto w-full max-w-xl">
@@ -188,7 +220,7 @@ export function Podium({
           }}
         />
       )}
-      <div className="relative grid grid-cols-3 items-end gap-3">
+      <div className={cn("relative mx-auto grid w-full items-end gap-3", gridClass)}>
         {columns.map(({ player, rank, height, delay }) => (
           <div key={rank} className="flex flex-col items-center justify-end gap-3">
             {player ? (
@@ -214,14 +246,25 @@ export function Podium({
                       )}
                     />
                   )}
+                  <PlayerAvatar
+                    avatar={normalizeAvatar(player.avatar)}
+                    className="mx-auto my-1 h-20 w-14"
+                  />
                   <p className="truncate font-display text-sm font-semibold tracking-tight sm:text-base">
                     {player.nickname}
                   </p>
-                  {(!hideOtherScores || player.id === meId) && (
-                    <p className="numeral text-base text-muted-foreground">
-                      {formatPoints(player.score)} poin
-                    </p>
-                  )}
+                  <p
+                    className="numeral text-base text-muted-foreground"
+                    aria-label={
+                      hideOtherScores && player.id !== meId
+                        ? "Skor disembunyikan"
+                        : `${formatPoints(player.score)} poin`
+                    }
+                  >
+                    {hideOtherScores && player.id !== meId
+                      ? "?"
+                      : `${formatPoints(player.score)} poin`}
+                  </p>
                 </div>
                 <div
                   className={cn(

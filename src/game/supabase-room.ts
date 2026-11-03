@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import type { PlayerAnswer, Quiz, QuizQuestion, RoomState } from "./types";
+import { normalizeAvatar, type AvatarConfig } from "./player-avatar";
 import { createClient, createPlayerClient } from "@/utils/supabase/client";
 
 export type PublicQuiz = Omit<Quiz, "questions"> & {
@@ -39,6 +40,7 @@ type RoomSnapshotPayload = {
   players: Array<{
     id: string;
     nickname: string;
+    avatar: unknown;
     score: number;
     last_gain: number;
     rank?: number;
@@ -69,6 +71,7 @@ function mapSnapshot(payload: RoomSnapshotPayload): LiveRoom {
       players: payload.players.map((player) => ({
         id: player.id,
         nickname: player.nickname,
+        avatar: normalizeAvatar(player.avatar),
         score: player.score,
         lastGain: player.last_gain,
         ...(player.rank !== undefined && { rank: player.rank }),
@@ -118,6 +121,17 @@ export async function getCurrentPlayerId(): Promise<string> {
   if (error) throw error;
   if (!data.user) throw new Error("Sesi pemain tidak ditemukan. Silakan bergabung kembali.");
   return data.user.id;
+}
+
+export async function updateCurrentPlayerAvatar(
+  roomId: string,
+  avatar: AvatarConfig,
+): Promise<void> {
+  const { error } = await createPlayerClient().rpc("set_room_player_avatar", {
+    p_room_id: roomId,
+    p_avatar: avatar,
+  });
+  if (error) throw error;
 }
 
 export async function recordPlayerGameResult(roomId: string): Promise<boolean> {

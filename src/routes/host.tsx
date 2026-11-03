@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { AmbientBackground } from "@/components/AmbientBackground";
+import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { ThemePicker } from "@/components/ThemePicker";
 import { TimerRing } from "@/components/TimerRing";
 import { ConfettiBurst } from "@/components/Confetti";
@@ -29,7 +30,8 @@ import {
   useSupabaseRoom,
 } from "@/game/supabase-room";
 import { getHostUser, getOwnedQuiz } from "@/game/supabase-quizzes";
-import type { Quiz } from "@/game/types";
+import type { Player, Quiz } from "@/game/types";
+import { normalizeAvatar } from "@/game/player-avatar";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/host")({
@@ -182,7 +184,7 @@ function HostPage() {
                 void startSupabaseRoom(roomId).catch((cause: unknown) => {
                   console.error("Failed to start game.", cause);
                   setPageError(
-                    "Permainan belum bisa dimulai. Pastikan ada 4 pemain dan coba lagi.",
+                    "Permainan belum bisa dimulai. Pastikan minimal 2 pemain sudah bergabung lalu coba lagi.",
                   );
                 });
               }}
@@ -295,7 +297,7 @@ function HostLobby({
   onStart,
 }: {
   pin: string | undefined;
-  players: { id: string; nickname: string }[];
+  players: Player[];
   minPlayers: number;
   onStart: () => void;
 }) {
@@ -358,17 +360,17 @@ function HostLobby({
           : `Sudah cukup pemain. Host bisa memulai permainan sekarang.`}
       </p>
 
-      <div className="mt-8 flex flex-wrap justify-center gap-2">
+      <div className="mt-8 grid w-full grid-cols-2 gap-3 sm:grid-cols-3">
         {players.map((p, i) => (
           <div
             key={p.id}
-            className="lift-3d glass anim-pop flex items-center gap-2 rounded-2xl px-4 py-2.5"
+            className="lift-3d glass anim-pop flex flex-col items-center rounded-2xl px-3 py-3"
             style={{ animationDelay: `${i * 70}ms` }}
           >
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/20">
-              <User className="h-3.5 w-3.5 text-primary" />
+            <PlayerAvatar avatar={normalizeAvatar(p.avatar)} className="h-28 w-[4.65rem]" />
+            <span className="mt-2 max-w-full truncate font-display text-sm font-semibold tracking-tight">
+              {p.nickname}
             </span>
-            <span className="font-display text-sm font-semibold tracking-tight">{p.nickname}</span>
           </div>
         ))}
       </div>

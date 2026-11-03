@@ -67,6 +67,9 @@ Jalankan migration SQL berikut **berurutan** dari `supabase/migrations/`:
 3. `20261102191500_public_practice_quizzes.sql`
 4. `20261102192000_practice_requires_account.sql`
 5. `20261103021700_solo_practice_stats.sql`
+6. `20261103123700_minimum_two_players.sql`
+7. `20261103124900_player_avatar_customization.sql`
+8. `20261103130400_avatar_clothing_options.sql`
 
 Di Supabase Authentication:
 
@@ -77,6 +80,9 @@ Di Supabase Authentication:
 
 Kuis dan sesi multiplayer disimpan di Supabase. Row Level Security membatasi
 akses data; skor pemain lain tidak ditampilkan kepada pemain.
+Host dapat memulai game multiplayer setelah minimal **2 pemain** bergabung.
+Pemain dapat mengedit avatar full-body dari lobby; perubahan rambut, baju,
+celana, warna karakter, dan aksesori akan terlihat oleh semua peserta.
 
 ## Deployment ke Vercel
 
@@ -107,6 +113,10 @@ aslinya.
 Logo kampus pada background dimuat dari Wikipedia Indonesia dan situs resmi IPB.
 Logo digunakan sebagai elemen dekoratif; hak atas merek dan gambar tetap milik
 pemegangnya.
+
+Pemain dapat mengatur avatar kartun saat berada di lobby: pilih karakter, warna,
+topi, kacamata, dan tas. Avatar tersinkron untuk semua pemain dan host, lalu
+ditampilkan kembali di papan peringkat dan podium.
 
 ## Perintah pengembangan
 
