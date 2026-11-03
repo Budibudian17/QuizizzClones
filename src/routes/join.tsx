@@ -16,6 +16,9 @@ import { AmbientBackground } from "@/components/AmbientBackground";
 import { AvatarCustomizer, PlayerAvatar } from "@/components/PlayerAvatar";
 import { ThemePicker } from "@/components/ThemePicker";
 import { TimerRing } from "@/components/TimerRing";
+import { CountdownView } from "@/components/CountdownView";
+import { GameAudioControls } from "@/components/GameAudioControls";
+import { RoomVoiceChat } from "@/components/RoomVoiceChat";
 import { ConfettiBurst } from "@/components/Confetti";
 import { FinalLeaderboard, FinalStandings, Leaderboard, Podium } from "@/components/Results";
 import { clearMe, loadMe, rankPlayers, saveMe, type SavedMe } from "@/game/room";
@@ -131,6 +134,16 @@ function JoinPage() {
   return (
     <div className="relative min-h-screen">
       <AmbientBackground />
+      {active && me && activeSession?.roomId && (
+        <>
+          <GameAudioControls
+            phase={active.phase}
+            phaseStartedAt={active.phaseStartedAt}
+            durationMs={active.durationMs}
+          />
+          <RoomVoiceChat roomId={activeSession.roomId} peerId={me.id} />
+        </>
+      )}
       <div className="fixed right-4 top-4 z-40">
         <ThemePicker />
       </div>
@@ -429,6 +442,8 @@ function PlayerStage({
   let stage = null;
   if (room.phase === "lobby") {
     stage = <PlayerLobby room={room} roomId={roomId} me={me} />;
+  } else if (room.phase === "countdown") {
+    stage = <CountdownView startedAt={room.phaseStartedAt} durationMs={room.durationMs} />;
   } else if (room.phase === "question" && question) {
     stage = (
       <PlayerQuestion
@@ -451,7 +466,7 @@ function PlayerStage({
   } else if (room.phase === "leaderboard") {
     stage =
       room.questionIndex === quiz.questions.length - 1 ? (
-        <FinalLeaderboard players={rankPlayers(room)} meId={playerId} hideOtherScores />
+        <FinalLeaderboard players={rankPlayers(room)} meId={playerId} />
       ) : (
         <section className="anim-pop flex w-full flex-col items-center text-center">
           <Crown className="h-7 w-7 text-accent" />

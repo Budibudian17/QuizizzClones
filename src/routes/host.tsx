@@ -18,6 +18,9 @@ import { AmbientBackground } from "@/components/AmbientBackground";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { ThemePicker } from "@/components/ThemePicker";
 import { TimerRing } from "@/components/TimerRing";
+import { CountdownView } from "@/components/CountdownView";
+import { GameAudioControls } from "@/components/GameAudioControls";
+import { RoomVoiceChat } from "@/components/RoomVoiceChat";
 import { ConfettiBurst } from "@/components/Confetti";
 import { FinalLeaderboard, FinalStandings, Leaderboard, Podium } from "@/components/Results";
 import { getRoom, MIN_PLAYERS_TO_START, rankPlayers } from "@/game/room";
@@ -68,6 +71,7 @@ function HostPage() {
   const [loadedQuiz, setLoadedQuiz] = useState<Quiz | null>(null);
   const quiz = getHostQuiz(liveRoom) ?? loadedQuiz;
   const [authorized, setAuthorized] = useState(false);
+  const [hostPeerId, setHostPeerId] = useState("");
   const [confetti, setConfetti] = useState(0);
   const [pageError, setPageError] = useState("");
   const roomPhase = room?.phase;
@@ -92,6 +96,7 @@ function HostPage() {
         const roomSession = await ensureHostRoom(found.id);
         if (!active) return;
         setAuthorized(true);
+        setHostPeerId(user.id);
         setLoadedQuiz(found);
         setRoomId(roomSession.roomId);
       })
@@ -141,6 +146,16 @@ function HostPage() {
   return (
     <div className="relative min-h-screen">
       <AmbientBackground />
+      {room && roomId && hostPeerId && (
+        <>
+          <GameAudioControls
+            phase={room.phase}
+            phaseStartedAt={room.phaseStartedAt}
+            durationMs={room.durationMs}
+          />
+          <RoomVoiceChat roomId={roomId} peerId={hostPeerId} isHost />
+        </>
+      )}
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 py-8 sm:px-8">
         <header className="flex items-center justify-between">
           <Link
@@ -189,6 +204,8 @@ function HostPage() {
                 });
               }}
             />
+          ) : room.phase === "countdown" ? (
+            <CountdownView startedAt={room.phaseStartedAt} durationMs={room.durationMs} />
           ) : room.phase === "question" && question ? (
             <HostQuestion question={question} room={room} total={quiz.questions.length} />
           ) : room.phase === "reveal" && question ? (

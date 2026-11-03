@@ -1,8 +1,8 @@
 import { createElement } from "react";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
-import { Leaderboard, Podium } from "@/components/Results";
+import { FinalLeaderboard, Leaderboard, Podium } from "@/components/Results";
 import { getPlayersBelowPodium } from "@/game/results";
 import type { Player } from "@/game/types";
 
@@ -37,7 +37,10 @@ describe("final standings", () => {
   it("uses a question mark instead of leaving hidden player scores blank", () => {
     render(
       createElement(Leaderboard, {
-        players: [{ ...players[0], score: 0 }, players[1]],
+        players: [
+          { id: "player-1", nickname: "Pemain 1", score: 0, lastGain: 0 },
+          { id: "player-2", nickname: "Pemain 2", score: 400, lastGain: 0 },
+        ],
         meId: "player-1",
         hideOtherScores: true,
       }),
@@ -45,5 +48,18 @@ describe("final standings", () => {
 
     expect(screen.getByLabelText("Skor disembunyikan")).toHaveTextContent("?");
     expect(screen.getByLabelText("0 poin")).toHaveTextContent("0");
+  });
+
+  it("shows all scores in the final leaderboard", () => {
+    vi.useFakeTimers();
+    render(createElement(FinalLeaderboard, { players }));
+
+    act(() => {
+      vi.advanceTimersByTime(2600);
+    });
+
+    expect(screen.getByText("500")).toBeInTheDocument();
+    expect(screen.getByText("400")).toBeInTheDocument();
+    vi.useRealTimers();
   });
 });

@@ -33,7 +33,7 @@ export type PlayerAnswer = {
   at: number;
 };
 
-export type GamePhase = "lobby" | "question" | "reveal" | "leaderboard" | "podium";
+export type GamePhase = "lobby" | "countdown" | "question" | "reveal" | "leaderboard" | "podium";
 
 export type RoomState = {
   pin: string;

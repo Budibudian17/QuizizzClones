@@ -70,6 +70,8 @@ Jalankan migration SQL berikut **berurutan** dari `supabase/migrations/`:
 6. `20261103123700_minimum_two_players.sql`
 7. `20261103124900_player_avatar_customization.sql`
 8. `20261103130400_avatar_clothing_options.sql`
+9. `20261103160000_countdown_voice_chat.sql`
+10. `20261103161000_reveal_final_leaderboard_scores.sql`
 
 Di Supabase Authentication:
 
@@ -79,10 +81,18 @@ Di Supabase Authentication:
   Redirect URLs**, termasuk URL production dan lokal yang digunakan.
 
 Kuis dan sesi multiplayer disimpan di Supabase. Row Level Security membatasi
-akses data; skor pemain lain tidak ditampilkan kepada pemain.
+akses data; skor pemain lain disembunyikan selama permainan dan dibuka pada
+leaderboard terakhir serta podium.
 Host dapat memulai game multiplayer setelah minimal **2 pemain** bergabung.
 Pemain dapat mengedit avatar full-body dari lobby; perubahan rambut, baju,
 celana, warna karakter, dan aksesori akan terlihat oleh semua peserta.
+Game menampilkan countdown bersama sebelum soal pertama dan menyediakan efek
+suara serta musik tema sintetis yang dapat diaktifkan atau dimatikan per perangkat.
+Voice chat bersifat opsional: pemain harus mengizinkan mikrofon lalu menekan
+**Gabung voice**. Audio dikirim langsung antarpeserta melalui WebRTC; peserta
+voice chat dapat melihat alamat jaringan yang diperlukan untuk koneksi P2P.
+Koneksi langsung dapat gagal pada sebagian jaringan, dan mode mesh P2P lebih
+cocok untuk room kecil daripada grup besar.
 
 ## Deployment ke Vercel
 
