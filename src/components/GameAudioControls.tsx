@@ -1,9 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Music2, Volume2, VolumeX } from "lucide-react";
 
 import type { GamePhase } from "@/game/types";
 
-const NOTES = [392, 494, 587, 494, 440, 523, 659, 523, 392, 494, 587, 784];
+const GAME_MELODY = [523, 659, 784, 659, 587, 698, 880, 698, 523, 659, 784, 1047];
+const PODIUM_MELODY = [392, 523, 659, 784, 659, 784, 1047, 784, 587, 784, 988, 1175];
+const GAME_CHORDS = [
+  [262, 330, 392],
+  [220, 262, 330],
+  [174, 220, 262],
+  [196, 247, 294],
+];
+const PODIUM_CHORDS = [
+  [196, 247, 294],
+  [220, 262, 330],
+  [262, 330, 392],
+  [294, 370, 440],
+];
 
 export function GameAudioControls({
   phase,
@@ -20,14 +33,15 @@ export function GameAudioControls({
   const previousPhase = useRef<GamePhase>(phase);
   const previousStartedAt = useRef(phaseStartedAt);
   const lastTick = useRef("");
+  const userDisabledAudio = useRef(false);
 
-  const tone = (frequency: number, duration = 0.13, volume = 0.07) => {
+  const tone = useCallback((frequency: number, duration = 0.13, volume = 0.07) => {
     const audio = audioRef.current;
     if (!audio || audio.state !== "running") return;
     const oscillator = audio.createOscillator();
     const gain = audio.createGain();
     const now = audio.currentTime;
-    oscillator.type = "sine";
+    oscillator.type = "triangle";
     oscillator.frequency.setValueAtTime(frequency, now);
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.exponentialRampToValueAtTime(volume, now + 0.015);
@@ -36,9 +50,9 @@ export function GameAudioControls({
     gain.connect(audio.destination);
     oscillator.start(now);
     oscillator.stop(now + duration + 0.02);
-  };
+  }, []);
 
-  const enableAudio = async () => {
+  const enableAudio = useCallback(async () => {
     try {
       const AudioContextConstructor = window.AudioContext;
       if (!AudioContextConstructor) return;
@@ -47,20 +61,37 @@ export function GameAudioControls({
       await audio.resume();
       setEnabled(true);
       setMusicEnabled(true);
-      tone(660, 0.11, 0.08);
+      tone(784, 0.18, 0.14);
     } catch (cause) {
       console.error("Could not enable game audio.", cause);
     }
-  };
+  }, [tone]);
 
-  const toggleSound = async () => {
+  const toggleSound = useCallback(async () => {
     if (enabled) {
+      userDisabledAudio.current = true;
       setEnabled(false);
       setMusicEnabled(false);
       return;
     }
     await enableAudio();
-  };
+  }, [enabled, enableAudio]);
+
+  useEffect(() => {
+    if (enabled || userDisabledAudio.current) return;
+    const handleFirstInteraction = (event: Event) => {
+      if (event.target instanceof Element && event.target.closest("[data-audio-control]")) return;
+      window.removeEventListener("pointerdown", handleFirstInteraction, true);
+      window.removeEventListener("keydown", handleFirstInteraction, true);
+      void enableAudio();
+    };
+    window.addEventListener("pointerdown", handleFirstInteraction, true);
+    window.addEventListener("keydown", handleFirstInteraction, true);
+    return () => {
+      window.removeEventListener("pointerdown", handleFirstInteraction, true);
+      window.removeEventListener("keydown", handleFirstInteraction, true);
+    };
+  }, [enabled, enableAudio]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -81,7 +112,7 @@ export function GameAudioControls({
       previousPhase.current = phase;
       previousStartedAt.current = phaseStartedAt;
     }
-  }, [enabled, phase, phaseStartedAt]);
+  }, [enabled, phase, phaseStartedAt, tone]);
 
   useEffect(() => {
     if (!enabled || (phase !== "countdown" && phase !== "question")) return;
@@ -95,17 +126,26 @@ export function GameAudioControls({
       tone(phase === "countdown" ? 620 + (4 - seconds) * 90 : 520, 0.11, 0.06);
     }, 70);
     return () => window.clearInterval(timer);
-  }, [durationMs, enabled, phase, phaseStartedAt]);
+  }, [durationMs, enabled, phase, phaseStartedAt, tone]);
 
   useEffect(() => {
-    if (!enabled || !musicEnabled || phase === "lobby" || phase === "podium") return;
+    if (!enabled || !musicEnabled) return;
     let noteIndex = 0;
+    const podium = phase === "podium";
+    const melody = podium ? PODIUM_MELODY : GAME_MELODY;
+    const chords = podium ? PODIUM_CHORDS : GAME_CHORDS;
+    const beatMs = podium ? 520 : 390;
     const timer = window.setInterval(() => {
-      tone(NOTES[noteIndex % NOTES.length]!, 0.24, 0.018);
+      if (noteIndex % 4 === 0) {
+        const chord = chords[(noteIndex / 4) % chords.length]!;
+        for (const frequency of chord) tone(frequency, podium ? 0.62 : 0.48, 0.045);
+        tone(chord[0]! / 2, podium ? 0.7 : 0.52, 0.08);
+      }
+      tone(melody[noteIndex % melody.length]!, podium ? 0.34 : 0.27, 0.2);
       noteIndex += 1;
-    }, 340);
+    }, beatMs);
     return () => window.clearInterval(timer);
-  }, [enabled, musicEnabled, phase]);
+  }, [enabled, musicEnabled, phase, tone]);
 
   useEffect(
     () => () => {
@@ -119,6 +159,7 @@ export function GameAudioControls({
     <div className="fixed bottom-4 right-4 z-40 flex items-center gap-2">
       <button
         type="button"
+        data-audio-control
         onClick={() => setMusicEnabled((current) => !current)}
         disabled={!enabled}
         aria-label={musicEnabled ? "Matikan musik tema" : "Nyalakan musik tema"}
@@ -129,13 +170,14 @@ export function GameAudioControls({
       </button>
       <button
         type="button"
+        data-audio-control
         onClick={() => void toggleSound()}
         aria-label={enabled ? "Matikan semua suara" : "Aktifkan suara game"}
         title={enabled ? "Matikan semua suara" : "Aktifkan suara game"}
         className="press-3d inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"
       >
         {enabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-        <span className="hidden sm:inline">{enabled ? "Suara aktif" : "Aktifkan suara"}</span>
+        <span className="hidden sm:inline">{enabled ? "Musik aktif" : "Aktifkan musik"}</span>
       </button>
     </div>
   );

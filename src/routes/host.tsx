@@ -20,7 +20,6 @@ import { ThemePicker } from "@/components/ThemePicker";
 import { TimerRing } from "@/components/TimerRing";
 import { CountdownView } from "@/components/CountdownView";
 import { GameAudioControls } from "@/components/GameAudioControls";
-import { RoomVoiceChat } from "@/components/RoomVoiceChat";
 import { ConfettiBurst } from "@/components/Confetti";
 import { FinalLeaderboard, FinalStandings, Leaderboard, Podium } from "@/components/Results";
 import { getRoom, MIN_PLAYERS_TO_START, rankPlayers } from "@/game/room";
@@ -71,7 +70,6 @@ function HostPage() {
   const [loadedQuiz, setLoadedQuiz] = useState<Quiz | null>(null);
   const quiz = getHostQuiz(liveRoom) ?? loadedQuiz;
   const [authorized, setAuthorized] = useState(false);
-  const [hostPeerId, setHostPeerId] = useState("");
   const [confetti, setConfetti] = useState(0);
   const [pageError, setPageError] = useState("");
   const roomPhase = room?.phase;
@@ -96,7 +94,6 @@ function HostPage() {
         const roomSession = await ensureHostRoom(found.id);
         if (!active) return;
         setAuthorized(true);
-        setHostPeerId(user.id);
         setLoadedQuiz(found);
         setRoomId(roomSession.roomId);
       })
@@ -114,18 +111,21 @@ function HostPage() {
   useEffect(() => {
     if (!roomId || !quiz || !roomPhase || roomPhase === "lobby" || roomPhase === "podium") return;
     let pending = false;
-    const t = window.setInterval(() => {
-      if (pending) return;
-      pending = true;
-      void tickSupabaseRoom(roomId)
-        .catch((cause: unknown) => {
-          console.error("Failed to advance game room.", cause);
-          setPageError("Sinkronisasi permainan terganggu. Periksa koneksi lalu muat ulang.");
-        })
-        .finally(() => {
-          pending = false;
-        });
-    }, 750);
+    const t = window.setInterval(
+      () => {
+        if (pending) return;
+        pending = true;
+        void tickSupabaseRoom(roomId)
+          .catch((cause: unknown) => {
+            console.error("Failed to advance game room.", cause);
+            setPageError("Sinkronisasi permainan terganggu. Periksa koneksi lalu muat ulang.");
+          })
+          .finally(() => {
+            pending = false;
+          });
+      },
+      roomPhase === "countdown" ? 200 : 750,
+    );
     return () => window.clearInterval(t);
   }, [roomId, quiz, roomPhase]);
 
@@ -146,15 +146,12 @@ function HostPage() {
   return (
     <div className="relative min-h-screen">
       <AmbientBackground />
-      {room && roomId && hostPeerId && (
-        <>
-          <GameAudioControls
-            phase={room.phase}
-            phaseStartedAt={room.phaseStartedAt}
-            durationMs={room.durationMs}
-          />
-          <RoomVoiceChat roomId={roomId} peerId={hostPeerId} isHost />
-        </>
+      {room && (
+        <GameAudioControls
+          phase={room.phase}
+          phaseStartedAt={room.phaseStartedAt}
+          durationMs={room.durationMs}
+        />
       )}
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 py-8 sm:px-8">
         <header className="flex items-center justify-between">

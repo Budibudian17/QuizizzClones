@@ -18,7 +18,6 @@ import { ThemePicker } from "@/components/ThemePicker";
 import { TimerRing } from "@/components/TimerRing";
 import { CountdownView } from "@/components/CountdownView";
 import { GameAudioControls } from "@/components/GameAudioControls";
-import { RoomVoiceChat } from "@/components/RoomVoiceChat";
 import { ConfettiBurst } from "@/components/Confetti";
 import { FinalLeaderboard, FinalStandings, Leaderboard, Podium } from "@/components/Results";
 import { clearMe, loadMe, rankPlayers, saveMe, type SavedMe } from "@/game/room";
@@ -134,16 +133,11 @@ function JoinPage() {
   return (
     <div className="relative min-h-screen">
       <AmbientBackground />
-      {active && me && activeSession?.roomId && (
-        <>
-          <GameAudioControls
-            phase={active.phase}
-            phaseStartedAt={active.phaseStartedAt}
-            durationMs={active.durationMs}
-          />
-          <RoomVoiceChat roomId={activeSession.roomId} peerId={me.id} />
-        </>
-      )}
+      <GameAudioControls
+        phase={active?.phase ?? "lobby"}
+        phaseStartedAt={active?.phaseStartedAt ?? 0}
+        durationMs={active?.durationMs ?? 0}
+      />
       <div className="fixed right-4 top-4 z-40">
         <ThemePicker />
       </div>

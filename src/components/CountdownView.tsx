@@ -9,8 +9,7 @@ export function CountdownView({
 }) {
   const now = useNow(100);
   const remaining = remainingMs(startedAt, durationMs, now);
-  const count = Math.max(1, Math.ceil(remaining / 1000));
-  const label = remaining === 0 ? "GO!" : count;
+  const count = Math.max(0, Math.ceil(remaining / 1000) - 1);
 
   return (
     <section
@@ -23,7 +22,7 @@ export function CountdownView({
         key={count}
         className="anim-pop numeral mt-3 flex h-40 w-40 items-center justify-center rounded-full border-4 border-accent/50 bg-accent/10 text-7xl text-accent shadow-[0_0_60px_hsl(var(--accent)/.25)] sm:h-52 sm:w-52 sm:text-8xl"
       >
-        {label}
+        {count}
       </div>
       <p className="mt-5 font-display text-lg font-bold">Permainan segera dimulai</p>
     </section>

@@ -72,6 +72,7 @@ Jalankan migration SQL berikut **berurutan** dari `supabase/migrations/`:
 8. `20261103130400_avatar_clothing_options.sql`
 9. `20261103160000_countdown_voice_chat.sql`
 10. `20261103161000_reveal_final_leaderboard_scores.sql`
+11. `20261103170000_remove_voice_chat_and_fix_countdown.sql`
 
 Di Supabase Authentication:
 
@@ -88,11 +89,6 @@ Pemain dapat mengedit avatar full-body dari lobby; perubahan rambut, baju,
 celana, warna karakter, dan aksesori akan terlihat oleh semua peserta.
 Game menampilkan countdown bersama sebelum soal pertama dan menyediakan efek
 suara serta musik tema sintetis yang dapat diaktifkan atau dimatikan per perangkat.
-Voice chat bersifat opsional: pemain harus mengizinkan mikrofon lalu menekan
-**Gabung voice**. Audio dikirim langsung antarpeserta melalui WebRTC; peserta
-voice chat dapat melihat alamat jaringan yang diperlukan untuk koneksi P2P.
-Koneksi langsung dapat gagal pada sebagian jaringan, dan mode mesh P2P lebih
-cocok untuk room kecil daripada grup besar.
 
 ## Deployment ke Vercel
 

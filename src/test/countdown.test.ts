@@ -6,20 +6,20 @@ import { CountdownView } from "@/components/CountdownView";
 
 describe("shared start countdown", () => {
   it("shows a countdown number before the first question", () => {
-    render(createElement(CountdownView, { startedAt: Date.now(), durationMs: 3000 }));
+    render(createElement(CountdownView, { startedAt: Date.now(), durationMs: 4000 }));
 
     expect(screen.getByRole("status")).toHaveTextContent("Bersiap!");
     expect(screen.getByRole("status")).toHaveTextContent("3");
   });
 
-  it("signals when the countdown has finished", () => {
+  it("shows zero during the final second before the question starts", () => {
     render(
       createElement(CountdownView, {
-        startedAt: Date.now() - 3000,
-        durationMs: 3000,
+        startedAt: Date.now() - 3100,
+        durationMs: 4000,
       }),
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent("GO!");
+    expect(screen.getByRole("status")).toHaveTextContent("0");
   });
 });
